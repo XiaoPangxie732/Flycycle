@@ -11,7 +11,7 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'idea'
 
 version = '0.0.1'
-group = 'cn.xiaopangxie732.mods' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+group = 'cn.maxpixel.mods'
 archivesBaseName = 'nfp'
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(8) // Mojang ships Java 8 to end users, so your mod should target Java 8.
