@@ -18,6 +18,11 @@
 
 package cn.maxpixel.mods.flycycle;
 
+import cn.maxpixel.mods.flycycle.block.BlockRegistry;
+import net.minecraft.item.ItemGroup;
+import net.minecraft.item.ItemStack;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.apache.logging.log4j.LogManager;
@@ -25,8 +30,15 @@ import org.apache.logging.log4j.Logger;
 
 @Mod("flycycle")
 public class Flycycle {
-    public static final String MODID = "flycycle";
     private static final Logger LOGGER = LogManager.getLogger("Flycycle");
+    public static final String MODID = "flycycle";
+    public static final ItemGroup ITEM_GROUP = new ItemGroup(MODID) {
+        @Override
+        @OnlyIn(Dist.CLIENT)
+        public ItemStack makeIcon() {
+            return new ItemStack(BlockRegistry.INF_POWER_GENERATOR.get());
+        }
+    };
 
     public Flycycle() {
         Registries.register(FMLJavaModLoadingContext.get());

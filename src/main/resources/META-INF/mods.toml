@@ -23,7 +23,7 @@ version="${file.jarVersion}" #mandatory
  # A display name for the mod
 displayName="Flycycle" #mandatory
 # A URL to query for updates for this mod. See the JSON update specification https://mcforge.readthedocs.io/en/latest/gettingstarted/autoupdate/
-updateJSONURL="https://gist.githubusercontent.com/XiaoPangxie732/08452a0e64aef69e5cb69813adddf0da/raw/2b114d96d7661858681f0de00538b58da6239460/flycycle-update.json" #optional
+updateJSONURL="https://gist.githubusercontent.com/XiaoPangxie732/08452a0e64aef69e5cb69813adddf0da/raw/flycycle-update.json" #optional
 # A URL for the "homepage" for this mod, displayed in the mod UI
 displayURL="https://github.com/XiaoPangxie732/Flycycle/" #optional
 # A file name (in the root of the mod JAR) containing a logo for display
@@ -34,8 +34,7 @@ logoFile="flycycle-logo.png" #optional
 authors="MaxPixel Studios Development(XiaoPangxie732)" #optional
 # The description text for the mod (multi line!) (#mandatory)
 description='''
-《三体》中的空中自行车
-'''
+《三体》中的空中自行车'''
 # A dependency - use the . to indicate dependency for a specific modid. Dependencies are optional.
 [[dependencies.flycycle]] #optional
     # the modid of the dependency

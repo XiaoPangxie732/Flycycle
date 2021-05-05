@@ -19,12 +19,14 @@
 package cn.maxpixel.mods.flycycle;
 
 import cn.maxpixel.mods.flycycle.block.BlockRegistry;
+import cn.maxpixel.mods.flycycle.item.ItemRegistry;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 public class Registries {
-    public static void register(FMLJavaModLoadingContext modLoadingContext) {
+    static void register(FMLJavaModLoadingContext modLoadingContext) {
         Flycycle.getLogger().info("Registering stuffs");
         BlockRegistry.register(modLoadingContext);
+        ItemRegistry.register(modLoadingContext);
         Flycycle.getLogger().info("Registering stuffs - completed");
     }
 }

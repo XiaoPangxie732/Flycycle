@@ -10,7 +10,7 @@ buildscript {
 apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'idea'
 
-version = '0.0.1'
+version = '1.16.5-0.0.1.0'
 group = 'cn.maxpixel.mods'
 archivesBaseName = 'flycycle'
 
