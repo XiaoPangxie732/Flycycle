@@ -1,0 +1,10 @@
+{
+  "_comment": "Item Group",
+  "itemGroup.flycycle": "Flycycle",
+
+  "_comment": "Blocks",
+  "block.flycycle.inf_power_generator": "Infinite Power Generator",
+
+  "_comment": "Items",
+  "item.flycycle.flycycle": "Flycycle"
+}

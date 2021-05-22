@@ -18,7 +18,7 @@
 
 package cn.maxpixel.mods.flycycle;
 
-import cn.maxpixel.mods.flycycle.block.BlockRegistry;
+import cn.maxpixel.mods.flycycle.item.ItemRegistry;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
@@ -36,7 +36,7 @@ public class Flycycle {
         @Override
         @OnlyIn(Dist.CLIENT)
         public ItemStack makeIcon() {
-            return new ItemStack(BlockRegistry.INF_POWER_GENERATOR.get());
+            return new ItemStack(ItemRegistry.FLYCYCLE.get());
         }
     };
 

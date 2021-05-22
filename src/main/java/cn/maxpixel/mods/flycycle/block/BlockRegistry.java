@@ -22,6 +22,7 @@ import cn.maxpixel.mods.flycycle.Flycycle;
 import cn.maxpixel.mods.flycycle.block.entity.BlockEntityRegistry;
 import cn.maxpixel.mods.flycycle.item.ItemRegistry;
 import net.minecraft.block.Block;
+import net.minecraft.item.Rarity;
 import net.minecraftforge.fml.RegistryObject;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.DeferredRegister;
@@ -32,10 +33,14 @@ import java.util.function.Supplier;
 public class BlockRegistry {
     private static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, Flycycle.MODID);
 
-    public static final RegistryObject<InfPowerGeneratorBlock> INF_POWER_GENERATOR = registerWithItem(InfPowerGeneratorBlock.NAME, InfPowerGeneratorBlock::new);
+    public static final RegistryObject<InfPowerGeneratorBlock> INF_POWER_GENERATOR = registerWithItem(InfPowerGeneratorBlock.NAME, InfPowerGeneratorBlock::new, Rarity.UNCOMMON);
 
     private static <T extends Block> RegistryObject<T> registerWithItem(String name, Supplier<T> sup) {
         return ItemRegistry.registerBlock(BLOCKS.register(name, sup));
+    }
+
+    private static <T extends Block> RegistryObject<T> registerWithItem(String name, Supplier<T> sup, Rarity rarity) {
+        return ItemRegistry.registerBlock(BLOCKS.register(name, sup), rarity);
     }
 
     public static void register(FMLJavaModLoadingContext modLoadingContext) {

@@ -15,13 +15,19 @@ public class ItemRegistry {
     private static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, Flycycle.MODID);
     public static final Object2ObjectOpenHashMap<RegistryObject<? extends Block>, RegistryObject<BlockItem>> BLOCK_ITEMS = new Object2ObjectOpenHashMap<>();
 
+    public static final RegistryObject<Item> FLYCYCLE = ITEMS.register(FlycycleItem.NAME, FlycycleItem::new);
+
     public static void register(FMLJavaModLoadingContext modLoadingContext) {
         ITEMS.register(modLoadingContext.getModEventBus());
     }
 
     public static <T extends Block> RegistryObject<T> registerBlock(RegistryObject<T> block) {
-        BLOCK_ITEMS.put(block, ITEMS.register(block.getId().getPath(), () ->
-                new BlockItem(block.get(), new Item.Properties().rarity(Rarity.UNCOMMON).setNoRepair().tab(Flycycle.ITEM_GROUP))));
+        return registerBlock(block, Rarity.COMMON);
+    }
+
+    public static <T extends Block> RegistryObject<T> registerBlock(RegistryObject<T> block, Rarity rarity) {
+        BLOCK_ITEMS.put(block, ITEMS.register(block.getId().getPath(), () -> new BlockItem(block.get(),
+                new Item.Properties().rarity(rarity).setNoRepair().tab(Flycycle.ITEM_GROUP))));
         return block;
     }
 }
