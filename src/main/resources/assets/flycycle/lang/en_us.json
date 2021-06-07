@@ -1,10 +1,12 @@
 {
-  "_comment": "Item Group",
-  "itemGroup.flycycle": "Flycycle",
-
   "_comment": "Blocks",
-  "block.flycycle.inf_power_generator": "Infinite Power Generator",
+  "block.flycycle.inf_power_generator": "(Almost) Infinite Power Generator",
 
   "_comment": "Items",
-  "item.flycycle.flycycle": "Flycycle"
+  "itemGroup.flycycle": "Flycycle",
+  "item.flycycle.flycycle": "Flycycle",
+
+  "_comment": "Key Bindings",
+  "key.flycycle.categories": "Flycycle Key Settings",
+  "key.flycycle.fly": "Hold to start flying"
 }

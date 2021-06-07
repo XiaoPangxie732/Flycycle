@@ -34,7 +34,8 @@ logoFile="flycycle-logo.png" #optional
 authors="MaxPixel Studios Development(XiaoPangxie732)" #optional
 # The description text for the mod (multi line!) (#mandatory)
 description='''
-《三体》中的空中自行车'''
+增强版竹蜻蜓（不是
+源自《三体》'''
 # A dependency - use the . to indicate dependency for a specific modid. Dependencies are optional.
 [[dependencies.flycycle]] #optional
     # the modid of the dependency
@@ -51,7 +52,13 @@ description='''
 [[dependencies.flycycle]]
     modId="minecraft"
     mandatory=true
-# This version range declares a minimum of the current minecraft version up to but not including the next major version
+    # This version range declares a minimum of the current minecraft version up to but not including the next major version
     versionRange="[1.16.5,1.17)"
     ordering="NONE"
+    side="BOTH"
+[[dependencies.flycycle]]
+    modId="curios"
+    mandatory=false
+    versionRange="[1.16.5-4.0.4.0,1.16.5-4.0.5.1]"
+    ordering="AFTER"
     side="BOTH"

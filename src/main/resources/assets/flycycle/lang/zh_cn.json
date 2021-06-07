@@ -6,5 +6,9 @@
   "block.flycycle.inf_power_generator": "无限能源（指核聚变",
 
   "_comment": "Items",
-  "item.flycycle.flycycle": "Flycycle"
+  "item.flycycle.flycycle": "增强版竹蜻蜓（不是",
+
+  "_comment": "KeyBindings",
+  "key.flycycle.categories": "Flycycle按键设置",
+  "key.flycycle.fly": "按住起飞"
 }

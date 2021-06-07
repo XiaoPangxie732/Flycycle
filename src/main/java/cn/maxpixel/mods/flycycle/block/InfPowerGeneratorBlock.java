@@ -1,6 +1,7 @@
 package cn.maxpixel.mods.flycycle.block;
 
 import cn.maxpixel.mods.flycycle.block.entity.BlockEntityRegistry;
+import mcp.MethodsReturnNonnullByDefault;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.material.Material;
@@ -11,16 +12,18 @@ import net.minecraft.loot.LootContext;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.*;
-import net.minecraft.world.biome.Biome;
 
 import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+@MethodsReturnNonnullByDefault
+@ParametersAreNonnullByDefault
 public class InfPowerGeneratorBlock extends Block {
     public static final String NAME = "inf_power_generator";
-    private boolean hasBlockEntity;
+    private volatile boolean hasBlockEntity;
 
     public InfPowerGeneratorBlock() {
         super(Properties.of(Material.METAL)
@@ -32,7 +35,7 @@ public class InfPowerGeneratorBlock extends Block {
 
     @Override
     public boolean hasTileEntity(BlockState state) {
-        return hasBlockEntity;
+        return true;
     }
 
     @Override
@@ -43,11 +46,6 @@ public class InfPowerGeneratorBlock extends Block {
     @Override
     public List<ItemStack> getDrops(BlockState p_220076_1_, LootContext.Builder p_220076_2_) {
         return Collections.emptyList();
-    }
-
-    @Override
-    public void onPlace(BlockState current, World level, BlockPos pos, BlockState old, boolean p_220082_5_) {
-        hasBlockEntity = level.getBiome(pos).getBiomeCategory() == Biome.Category.OCEAN;
     }
 
     private void createExplosion(World level, BlockPos pos) {
@@ -82,6 +80,6 @@ public class InfPowerGeneratorBlock extends Block {
     @Nullable
     @Override
     public TileEntity createTileEntity(BlockState state, IBlockReader world) {
-        return hasBlockEntity ? BlockEntityRegistry.INF_POWER_GENERATOR.get().create() : null;
+        return BlockEntityRegistry.INF_POWER_GENERATOR.get().create();
     }
 }

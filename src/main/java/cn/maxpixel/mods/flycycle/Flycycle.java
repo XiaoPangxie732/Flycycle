@@ -23,12 +23,19 @@ import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.InterModComms;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import top.theillusivec4.curios.api.CuriosApi;
+import top.theillusivec4.curios.api.SlotTypeMessage;
+import top.theillusivec4.curios.api.SlotTypePreset;
 
 @Mod("flycycle")
+@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class Flycycle {
     private static final Logger LOGGER = LogManager.getLogger("Flycycle");
     public static final String MODID = "flycycle";
@@ -42,6 +49,14 @@ public class Flycycle {
 
     public Flycycle() {
         Registries.register(FMLJavaModLoadingContext.get());
+    }
+
+    @SubscribeEvent
+    public static void enqueue(InterModEnqueueEvent enqueueEvent) {
+        try {
+            InterModComms.sendTo(CuriosApi.MODID, SlotTypeMessage.REGISTER_TYPE, SlotTypePreset.BACK.getMessageBuilder()::build);
+            LOGGER.info("Found Curios API.");
+        } catch(NoClassDefFoundError ignored) {}
     }
 
     public static Logger getLogger() {
