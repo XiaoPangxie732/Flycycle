@@ -6,31 +6,24 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.profiler.IProfiler;
 import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.ClassInheritanceMultiMap;
 import net.minecraft.util.Direction;
-import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.biome.Biome;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.energy.EnergyStorage;
 import net.minecraftforge.energy.IEnergyStorage;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.Collections;
 import java.util.Objects;
-import java.util.stream.LongStream;
 
-import static net.minecraft.util.math.MathHelper.floor;
 import static net.minecraftforge.energy.CapabilityEnergy.ENERGY;
 
 public class InfPowerGeneratorBlockEntity extends TileEntity implements ITickableTileEntity {
-    private static final AxisAlignedBB RANGE_BOX = AxisAlignedBB.ofSize(1000, 1000, 1000)
-            .move(.0d, 400.0d, .0d);
-    private final AxisAlignedBB currentBox = RANGE_BOX.move(getBlockPos().getX(), .0d, getBlockPos().getZ());
-    private final long[] rangeChunks = ChunkPos.rangeClosed(new ChunkPos(floor(currentBox.minX) >> 4, floor(currentBox.minZ) >> 4),
-            new ChunkPos(floor(currentBox.maxX) >> 4, floor(currentBox.maxZ) >> 4)).mapToLong(ChunkPos::toLong).toArray();
     private static final LazyOptional<IEnergyStorage> energyStorage = LazyOptional.of(() -> new IEnergyStorage() {
         @Override
         public int receiveEnergy(int maxReceive, boolean simulate) { return 0; }
@@ -62,8 +55,9 @@ public class InfPowerGeneratorBlockEntity extends TileEntity implements ITickabl
     }
 
     private void extractEnergy(ICapabilityProvider toExtract) {
-        toExtract.getCapability(ENERGY).filter(IEnergyStorage::canReceive).ifPresent(energy -> energy.receiveEnergy(energyStorage.orElse(null)
-                .extractEnergy(energy.getMaxEnergyStored() - energy.getEnergyStored(), false), false));
+        toExtract.getCapability(ENERGY).filter(IEnergyStorage::canReceive).ifPresent(energy -> energy.receiveEnergy(energyStorage.orElse(
+                new EnergyStorage(-1)).extractEnergy(energy.getMaxEnergyStored() - energy.getEnergyStored(),false),
+                false));
     }
 
     private boolean waterAround() {
@@ -79,33 +73,32 @@ public class InfPowerGeneratorBlockEntity extends TileEntity implements ITickabl
         if(hasLevel() && !level.isClientSide && level.isLoaded(getBlockPos()) &&
                 level.getBiome(getBlockPos()).getBiomeCategory() == Biome.Category.OCEAN && waterAround()) {
             profiler.popPush("extractEnergy");
-            LongStream.of(rangeChunks).parallel()
-                    .mapToObj(pos -> {
-                        int x = ChunkPos.getX(pos);
-                        int z = ChunkPos.getZ(pos);
-                        return level.getChunkSource().hasChunk(x, z) ? level.getChunkSource().getChunkNow(x, z) : null;
-                    })
+            int minX = -100 + getBlockPos().getX() >> 4;
+            int minZ = -100 + getBlockPos().getZ() >> 4;
+            int maxX = 100 + getBlockPos().getX() >> 4;
+            int maxZ = 100 + getBlockPos().getZ() >> 4;
+            ChunkPos.rangeClosed(new ChunkPos(minX, minZ), new ChunkPos(maxX, maxZ)).parallel()
+                    .map(pos -> level.getChunkSource().getChunkNow(pos.x, pos.z))
                     .filter(Objects::nonNull)
                     .forEach(chunk -> {
-                        chunk.getEntities((Entity) null, currentBox, Collections.emptyList(), entity -> {
-                            extractEnergy(entity);
-                            if(entity instanceof PlayerEntity) {
-                                ((PlayerEntity) entity).inventory.items.parallelStream().forEach(this::extractEnergy);
-                                ((PlayerEntity) entity).inventory.armor.parallelStream().forEach(this::extractEnergy);
-                                ((PlayerEntity) entity).inventory.offhand.parallelStream().forEach(this::extractEnergy);
-                            } else if(entity instanceof IInventory) {
-                                IInventory inv = (IInventory) entity;
-                                for(int i = 0; i < inv.getContainerSize(); i++) extractEnergy(inv.getItem(i));
-                            }
-                            return false;
-                        });
-                        chunk.getBlockEntities().values().forEach(be -> {
-                            if(level.isLoaded(be.getBlockPos())) {
-                                extractEnergy(be);
-                                if(be instanceof IInventory) {
-                                    IInventory inv = (IInventory) be;
+                        for(ClassInheritanceMultiMap<Entity> entitySection : chunk.getEntitySections()) {
+                            entitySection.parallelStream().forEach(entity -> {
+                                extractEnergy(entity);
+                                if(entity instanceof PlayerEntity) {
+                                    ((PlayerEntity) entity).inventory.items.parallelStream().forEach(this::extractEnergy);
+                                    ((PlayerEntity) entity).inventory.armor.parallelStream().forEach(this::extractEnergy);
+                                    ((PlayerEntity) entity).inventory.offhand.parallelStream().forEach(this::extractEnergy);
+                                } else if(entity instanceof IInventory) {
+                                    IInventory inv = (IInventory) entity;
                                     for(int i = 0; i < inv.getContainerSize(); i++) extractEnergy(inv.getItem(i));
                                 }
+                            });
+                        }
+                        chunk.getBlockEntities().values().parallelStream().filter(be -> level.isLoaded(be.getBlockPos())).forEach(be -> {
+                            extractEnergy(be);
+                            if(be instanceof IInventory) {
+                                IInventory inv = (IInventory) be;
+                                for(int i = 0; i < inv.getContainerSize(); i++) extractEnergy(inv.getItem(i));
                             }
                         });
                     });

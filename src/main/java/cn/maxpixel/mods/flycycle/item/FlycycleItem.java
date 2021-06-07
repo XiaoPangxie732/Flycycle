@@ -7,15 +7,19 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
+import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
+import net.minecraftforge.common.capabilities.ICapabilitySerializable;
+import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.CapabilityEnergy;
 import net.minecraftforge.energy.EnergyStorage;
@@ -34,7 +38,6 @@ public class FlycycleItem extends Item {
     public FlycycleItem() {
         super(new Properties()
                 .durability(ENERGY_CAPACITY)
-                .defaultDurability(0)
                 .setNoRepair()
                 .tab(Flycycle.ITEM_GROUP));
     }
@@ -42,26 +45,48 @@ public class FlycycleItem extends Item {
     @Nullable
     @Override
     public ICapabilityProvider initCapabilities(ItemStack stack, @Nullable CompoundNBT nbt) {
-        return new ICapabilityProvider() {
-            private final LazyOptional<IEnergyStorage> ENERGY = LazyOptional.of(() -> new EnergyStorage(ENERGY_CAPACITY, ENERGY_CAPACITY, 0));
+        return new ICapabilitySerializable<CompoundNBT>() {
+            private LazyOptional<IEnergyStorage> ENERGY = LazyOptional.of(() -> new EnergyStorage(ENERGY_CAPACITY, ENERGY_CAPACITY, 0));
 
             @Nonnull
             @Override
             public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
                 return CapabilityEnergy.ENERGY.orEmpty(cap, ENERGY);
             }
+
+            @Override
+            public CompoundNBT serializeNBT() {
+                CompoundNBT compound = new CompoundNBT();
+                ENERGY.ifPresent(storage -> compound.putInt("Energy", storage.getEnergyStored()));
+                return compound;
+            }
+
+            @Override
+            public void deserializeNBT(CompoundNBT nbt) {
+                if(nbt.contains("Energy") && nbt.getTagType("Energy") == Constants.NBT.TAG_INT)
+                    ENERGY = LazyOptional.of(() -> new EnergyStorage(ENERGY_CAPACITY, ENERGY_CAPACITY, 0, nbt.getInt("Energy")));
+            }
         };
     }
 
     @Override
+    public void fillItemCategory(ItemGroup group, NonNullList<ItemStack> itemStacks) {
+        if(this.allowdedIn(group)) {
+            ItemStack is = new ItemStack(this);
+            is.setDamageValue(ENERGY_CAPACITY);
+            itemStacks.add(is);
+        }
+    }
+
+    @Override
     public int getDamage(ItemStack stack) {
-        return MathHelper.clamp(stack.getCapability(CapabilityEnergy.ENERGY).orElse(new EnergyStorage(0))
-                .getEnergyStored(), 0, ENERGY_CAPACITY);
+        IEnergyStorage storage = stack.getCapability(CapabilityEnergy.ENERGY).orElse(new EnergyStorage(-1));
+        return MathHelper.clamp(storage.getMaxEnergyStored() - storage.getEnergyStored(), 0, ENERGY_CAPACITY);
     }
 
     @Override
     public boolean showDurabilityBar(ItemStack stack) {
-        return false;
+        return true;
     }
 
     @Override
