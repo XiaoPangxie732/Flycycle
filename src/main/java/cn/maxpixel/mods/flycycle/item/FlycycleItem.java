@@ -7,13 +7,11 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
-import net.minecraft.util.NonNullList;
 import net.minecraft.world.World;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
@@ -69,15 +67,6 @@ public class FlycycleItem extends Item {
     }
 
     @Override
-    public void fillItemCategory(ItemGroup group, NonNullList<ItemStack> itemStacks) {
-        if(this.allowdedIn(group)) {
-            ItemStack is = new ItemStack(this);
-            is.setDamageValue(ENERGY_CAPACITY);
-            itemStacks.add(is);
-        }
-    }
-
-    @Override
     public double getDurabilityForDisplay(ItemStack stack) {
         IEnergyStorage storage = stack.getCapability(CapabilityEnergy.ENERGY).orElse(new EnergyStorage(0));
         return (storage.getMaxEnergyStored() - storage.getEnergyStored()) / (double) storage.getMaxEnergyStored();
@@ -92,7 +81,7 @@ public class FlycycleItem extends Item {
     public void inventoryTick(ItemStack itemStack, World level, Entity player, int slot, boolean selected) {
         super.inventoryTick(itemStack, level, player, slot, selected);
         if(level.isClientSide && KeyBindings.KEY_FLY.isDown()) {
-            itemStack.getCapability(CapabilityEnergy.ENERGY, Direction.DOWN);
+//            itemStack.getCapability(CapabilityEnergy.ENERGY);
         }
     }
 

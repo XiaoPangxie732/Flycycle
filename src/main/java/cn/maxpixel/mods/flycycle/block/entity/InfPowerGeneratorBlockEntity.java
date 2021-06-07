@@ -87,7 +87,7 @@ public class InfPowerGeneratorBlockEntity extends TileEntity implements ITickabl
                                 if(entity instanceof PlayerEntity) {
                                     ((PlayerEntity) entity).inventory.items.parallelStream().forEach(this::extractEnergy);
                                     ((PlayerEntity) entity).inventory.armor.parallelStream().forEach(this::extractEnergy);
-                                    ((PlayerEntity) entity).inventory.offhand.parallelStream().forEach(this::extractEnergy);
+                                    extractEnergy(((PlayerEntity) entity).inventory.offhand.get(0));
                                 } else if(entity instanceof IInventory) {
                                     IInventory inv = (IInventory) entity;
                                     for(int i = 0; i < inv.getContainerSize(); i++) extractEnergy(inv.getItem(i));
