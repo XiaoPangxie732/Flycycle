@@ -14,7 +14,6 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
 import net.minecraft.util.NonNullList;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
@@ -37,7 +36,7 @@ public class FlycycleItem extends Item {
 
     public FlycycleItem() {
         super(new Properties()
-                .durability(ENERGY_CAPACITY)
+                .stacksTo(1)
                 .setNoRepair()
                 .tab(Flycycle.ITEM_GROUP));
     }
@@ -46,7 +45,7 @@ public class FlycycleItem extends Item {
     @Override
     public ICapabilityProvider initCapabilities(ItemStack stack, @Nullable CompoundNBT nbt) {
         return new ICapabilitySerializable<CompoundNBT>() {
-            private LazyOptional<IEnergyStorage> ENERGY = LazyOptional.of(() -> new EnergyStorage(ENERGY_CAPACITY, ENERGY_CAPACITY, 0));
+            private final LazyOptional<IEnergyStorage> ENERGY = LazyOptional.of(() -> new EnergyStorage(ENERGY_CAPACITY, ENERGY_CAPACITY, 0));
 
             @Nonnull
             @Override
@@ -64,7 +63,7 @@ public class FlycycleItem extends Item {
             @Override
             public void deserializeNBT(CompoundNBT nbt) {
                 if(nbt.contains("Energy") && nbt.getTagType("Energy") == Constants.NBT.TAG_INT)
-                    ENERGY = LazyOptional.of(() -> new EnergyStorage(ENERGY_CAPACITY, ENERGY_CAPACITY, 0, nbt.getInt("Energy")));
+                    ENERGY.ifPresent(storage -> storage.receiveEnergy(nbt.getInt("Energy"), false));
             }
         };
     }
@@ -79,9 +78,9 @@ public class FlycycleItem extends Item {
     }
 
     @Override
-    public int getDamage(ItemStack stack) {
-        IEnergyStorage storage = stack.getCapability(CapabilityEnergy.ENERGY).orElse(new EnergyStorage(-1));
-        return MathHelper.clamp(storage.getMaxEnergyStored() - storage.getEnergyStored(), 0, ENERGY_CAPACITY);
+    public double getDurabilityForDisplay(ItemStack stack) {
+        IEnergyStorage storage = stack.getCapability(CapabilityEnergy.ENERGY).orElse(new EnergyStorage(0));
+        return (storage.getMaxEnergyStored() - storage.getEnergyStored()) / (double) storage.getMaxEnergyStored();
     }
 
     @Override
