@@ -21,15 +21,23 @@ package cn.maxpixel.mods.flycycle;
 import cn.maxpixel.mods.flycycle.block.BlockRegistry;
 import cn.maxpixel.mods.flycycle.item.ItemRegistry;
 import cn.maxpixel.mods.flycycle.loot.modifier.LootModifierRegistry;
+import cn.maxpixel.mods.flycycle.networking.NetworkManager;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 public class Registries {
     static void register(FMLJavaModLoadingContext modLoadingContext) {
         Flycycle.getLogger().info("Registering stuffs");
-        KeyBindings.register(modLoadingContext);
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> clientRegister(modLoadingContext));
+        NetworkManager.init();
         LootModifierRegistry.register(modLoadingContext);
         BlockRegistry.register(modLoadingContext);
         ItemRegistry.register(modLoadingContext);
         Flycycle.getLogger().info("Registering stuffs - completed");
+    }
+
+    private static void clientRegister(FMLJavaModLoadingContext modLoadingContext) {
+        KeyBindings.register(modLoadingContext);
     }
 }

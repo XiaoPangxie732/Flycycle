@@ -34,7 +34,7 @@ import top.theillusivec4.curios.api.CuriosApi;
 import top.theillusivec4.curios.api.SlotTypeMessage;
 import top.theillusivec4.curios.api.SlotTypePreset;
 
-@Mod("flycycle")
+@Mod(Flycycle.MODID)
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class Flycycle {
     private static final Logger LOGGER = LogManager.getLogger("Flycycle");

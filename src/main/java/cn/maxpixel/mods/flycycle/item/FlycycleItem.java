@@ -2,9 +2,12 @@ package cn.maxpixel.mods.flycycle.item;
 
 import cn.maxpixel.mods.flycycle.Flycycle;
 import cn.maxpixel.mods.flycycle.KeyBindings;
+import cn.maxpixel.mods.flycycle.networking.NetworkManager;
+import cn.maxpixel.mods.flycycle.networking.packet.serverbound.SSyncItemStackEnergyPacket;
 import mcp.MethodsReturnNonnullByDefault;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -12,6 +15,7 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
@@ -21,6 +25,7 @@ import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.CapabilityEnergy;
 import net.minecraftforge.energy.EnergyStorage;
 import net.minecraftforge.energy.IEnergyStorage;
+import net.minecraftforge.fml.network.PacketDistributor;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -43,12 +48,12 @@ public class FlycycleItem extends Item {
     @Override
     public ICapabilityProvider initCapabilities(ItemStack stack, @Nullable CompoundNBT nbt) {
         return new ICapabilitySerializable<CompoundNBT>() {
-            private final LazyOptional<IEnergyStorage> ENERGY = LazyOptional.of(() -> new EnergyStorage(ENERGY_CAPACITY, ENERGY_CAPACITY, 0));
+            private final LazyOptional<ChangeableEnergyStorage> ENERGY = LazyOptional.of(ChangeableEnergyStorage::new);
 
             @Nonnull
             @Override
             public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
-                return CapabilityEnergy.ENERGY.orEmpty(cap, ENERGY);
+                return CapabilityEnergy.ENERGY == cap ? ENERGY.cast() : LazyOptional.empty();
             }
 
             @Override
@@ -61,7 +66,7 @@ public class FlycycleItem extends Item {
             @Override
             public void deserializeNBT(CompoundNBT nbt) {
                 if(nbt.contains("Energy") && nbt.getTagType("Energy") == Constants.NBT.TAG_INT)
-                    ENERGY.ifPresent(storage -> storage.receiveEnergy(nbt.getInt("Energy"), false));
+                    ENERGY.ifPresent(storage -> storage.setEnergy(nbt.getInt("Energy")));
             }
         };
     }
@@ -80,9 +85,17 @@ public class FlycycleItem extends Item {
     @Override
     public void inventoryTick(ItemStack itemStack, World level, Entity player, int slot, boolean selected) {
         super.inventoryTick(itemStack, level, player, slot, selected);
-        if(level.isClientSide && KeyBindings.KEY_FLY.isDown()) {
-//            itemStack.getCapability(CapabilityEnergy.ENERGY);
-        }
+        if(!level.isClientSide) {
+            itemStack.getCapability(CapabilityEnergy.ENERGY)
+                    .filter(ChangeableEnergyStorage.class::isInstance)
+                    .map(ChangeableEnergyStorage.class::cast)
+                    .filter(ChangeableEnergyStorage::needUpdate)
+                    .ifPresent(storage -> {
+                        NetworkManager.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) player),
+                                new SSyncItemStackEnergyPacket(player.getId(), slot, storage.getEnergyStored()));
+                        storage.updated();
+                    });
+        } else if(KeyBindings.KEY_FLY.isDown()) {}
     }
 
     @Nullable
@@ -100,5 +113,31 @@ public class FlycycleItem extends Item {
             return ActionResult.sidedSuccess(itemStack, level.isClientSide);
         }
         return ActionResult.fail(itemStack);
+    }
+
+    public static class ChangeableEnergyStorage extends EnergyStorage {
+        private boolean needUpdate;
+
+        public ChangeableEnergyStorage() {
+            super(ENERGY_CAPACITY, ENERGY_CAPACITY, 0);
+        }
+
+        @Override
+        public int receiveEnergy(int maxReceive, boolean simulate) {
+            this.needUpdate = true;
+            return super.receiveEnergy(maxReceive, simulate);
+        }
+
+        public boolean needUpdate() {
+            return this.needUpdate;
+        }
+
+        public void updated() {
+            this.needUpdate = false;
+        }
+
+        public void setEnergy(int energy) {
+            this.energy = MathHelper.clamp(energy, 0, capacity);
+        }
     }
 }

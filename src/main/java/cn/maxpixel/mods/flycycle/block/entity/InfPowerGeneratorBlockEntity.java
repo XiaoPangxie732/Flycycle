@@ -55,9 +55,12 @@ public class InfPowerGeneratorBlockEntity extends TileEntity implements ITickabl
     }
 
     private void extractEnergy(ICapabilityProvider toExtract) {
-        toExtract.getCapability(ENERGY).filter(IEnergyStorage::canReceive).ifPresent(energy -> energy.receiveEnergy(energyStorage.orElse(
-                new EnergyStorage(-1)).extractEnergy(energy.getMaxEnergyStored() - energy.getEnergyStored(),false),
-                false));
+        toExtract.getCapability(ENERGY)
+                .filter(IEnergyStorage::canReceive)
+                .ifPresent(energy -> energy.receiveEnergy(
+                        energyStorage.orElse(new EnergyStorage(-1))
+                                .extractEnergy(energy.getMaxEnergyStored() - energy.getEnergyStored(),false),
+                        false));
     }
 
     private boolean waterAround() {
@@ -77,7 +80,7 @@ public class InfPowerGeneratorBlockEntity extends TileEntity implements ITickabl
             int minZ = -100 + getBlockPos().getZ() >> 4;
             int maxX = 100 + getBlockPos().getX() >> 4;
             int maxZ = 100 + getBlockPos().getZ() >> 4;
-            ChunkPos.rangeClosed(new ChunkPos(minX, minZ), new ChunkPos(maxX, maxZ)).parallel()
+            ChunkPos.rangeClosed(new ChunkPos(minX, minZ), new ChunkPos(maxX, maxZ))
                     .map(pos -> level.getChunkSource().getChunkNow(pos.x, pos.z))
                     .filter(Objects::nonNull)
                     .forEach(chunk -> {
