@@ -3,12 +3,15 @@ package cn.maxpixel.mods.flycycle.item;
 import cn.maxpixel.mods.flycycle.Flycycle;
 import cn.maxpixel.mods.flycycle.KeyBindings;
 import cn.maxpixel.mods.flycycle.networking.NetworkManager;
+import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CSyncItemStackEnergyPacket;
 import cn.maxpixel.mods.flycycle.networking.packet.serverbound.SSyncItemStackEnergyPacket;
 import mcp.MethodsReturnNonnullByDefault;
+import net.minecraft.block.DispenserBlock;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.EquipmentSlotType;
+import net.minecraft.item.ArmorItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
@@ -36,12 +39,14 @@ import javax.annotation.ParametersAreNonnullByDefault;
 public class FlycycleItem extends Item {
     public static final String NAME = "flycycle";
     private static final int ENERGY_CAPACITY = 200;
+    private boolean engineStatus = false;
 
     public FlycycleItem() {
         super(new Properties()
                 .stacksTo(1)
                 .setNoRepair()
                 .tab(Flycycle.ITEM_GROUP));
+        DispenserBlock.registerBehavior(this, ArmorItem.DISPENSE_ITEM_BEHAVIOR);
     }
 
     @Nullable
@@ -95,7 +100,21 @@ public class FlycycleItem extends Item {
                                 new SSyncItemStackEnergyPacket(player.getId(), slot, storage.getEnergyStored()));
                         storage.updated();
                     });
-        } else if(KeyBindings.KEY_FLY.isDown()) {}
+        } else {
+            if(KeyBindings.KEY_TOGGLE_ENGINE.isDown()) engineStatus = !engineStatus;
+            if(engineStatus) {
+                itemStack.getCapability(CapabilityEnergy.ENERGY)
+                        .filter(ChangeableEnergyStorage.class::isInstance)
+                        .map(ChangeableEnergyStorage.class::cast)
+                        .ifPresent(storage -> {
+                            if(storage.use()) {
+                                NetworkManager.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) player),
+                                        new CSyncItemStackEnergyPacket(player.getId(), slot, storage.getEnergyStored()));
+                            } else engineStatus = false;
+                        });
+                engineStatus = false;
+            }
+        }
     }
 
     @Nullable
@@ -126,6 +145,14 @@ public class FlycycleItem extends Item {
         public int receiveEnergy(int maxReceive, boolean simulate) {
             this.needUpdate = true;
             return super.receiveEnergy(maxReceive, simulate);
+        }
+
+        private boolean use() {
+            if(energy >= 200) {
+                energy = 0;
+                return true;
+            }
+            return false;
         }
 
         public boolean needUpdate() {

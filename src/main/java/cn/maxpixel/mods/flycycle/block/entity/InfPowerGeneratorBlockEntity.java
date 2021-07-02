@@ -80,7 +80,7 @@ public class InfPowerGeneratorBlockEntity extends TileEntity implements ITickabl
             int minZ = -100 + getBlockPos().getZ() >> 4;
             int maxX = 100 + getBlockPos().getX() >> 4;
             int maxZ = 100 + getBlockPos().getZ() >> 4;
-            ChunkPos.rangeClosed(new ChunkPos(minX, minZ), new ChunkPos(maxX, maxZ))
+            ChunkPos.rangeClosed(new ChunkPos(minX, minZ), new ChunkPos(maxX, maxZ)).parallel()
                     .map(pos -> level.getChunkSource().getChunkNow(pos.x, pos.z))
                     .filter(Objects::nonNull)
                     .forEach(chunk -> {
