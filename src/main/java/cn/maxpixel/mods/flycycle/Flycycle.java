@@ -53,10 +53,7 @@ public class Flycycle {
 
     @SubscribeEvent
     public static void enqueue(InterModEnqueueEvent enqueueEvent) {
-        try {
-            InterModComms.sendTo(CuriosApi.MODID, SlotTypeMessage.REGISTER_TYPE, SlotTypePreset.BACK.getMessageBuilder()::build);
-            LOGGER.info("Found Curios API.");
-        } catch(NoClassDefFoundError ignored) {}
+        InterModComms.sendTo(CuriosApi.MODID, SlotTypeMessage.REGISTER_TYPE, SlotTypePreset.BACK.getMessageBuilder()::build);
     }
 
     public static Logger getLogger() {

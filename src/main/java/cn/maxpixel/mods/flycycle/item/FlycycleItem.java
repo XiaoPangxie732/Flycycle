@@ -8,16 +8,13 @@ import cn.maxpixel.mods.flycycle.networking.packet.serverbound.SSyncItemStackEne
 import mcp.MethodsReturnNonnullByDefault;
 import net.minecraft.block.DispenserBlock;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.Direction;
-import net.minecraft.util.Hand;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraftforge.common.capabilities.Capability;
@@ -29,6 +26,8 @@ import net.minecraftforge.energy.CapabilityEnergy;
 import net.minecraftforge.energy.EnergyStorage;
 import net.minecraftforge.energy.IEnergyStorage;
 import net.minecraftforge.fml.network.PacketDistributor;
+import top.theillusivec4.curios.api.SlotContext;
+import top.theillusivec4.curios.api.type.capability.ICurioItem;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -36,7 +35,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
-public class FlycycleItem extends Item {
+public class FlycycleItem extends Item implements ICurioItem {
     public static final String NAME = "flycycle";
     private static final int ENERGY_CAPACITY = 200;
     private boolean engineStatus = false;
@@ -117,21 +116,14 @@ public class FlycycleItem extends Item {
         }
     }
 
-    @Nullable
     @Override
-    public EquipmentSlotType getEquipmentSlot(ItemStack stack) {
-        return EquipmentSlotType.CHEST;
+    public void curioAnimate(String identifier, int index, LivingEntity livingEntity, ItemStack stack) {
+        ICurioItem.super.curioAnimate(identifier, index, livingEntity, stack);
     }
 
     @Override
-    public ActionResult<ItemStack> use(World level, PlayerEntity player, Hand hand) {
-        ItemStack itemStack = player.getItemInHand(hand);
-        if(player.getItemBySlot(EquipmentSlotType.CHEST).isEmpty()) {
-            player.setItemSlot(EquipmentSlotType.CHEST, itemStack.copy());
-            itemStack.setCount(0);
-            return ActionResult.sidedSuccess(itemStack, level.isClientSide);
-        }
-        return ActionResult.fail(itemStack);
+    public boolean canEquipFromUse(SlotContext slotContext, ItemStack stack) {
+        return true;
     }
 
     public static class ChangeableEnergyStorage extends EnergyStorage {

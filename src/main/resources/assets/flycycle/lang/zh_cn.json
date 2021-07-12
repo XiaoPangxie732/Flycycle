@@ -1,11 +1,9 @@
 {
-  "_comment": "Item Group",
-  "itemGroup.flycycle": "Flycycle",
-
   "_comment": "Blocks",
   "block.flycycle.inf_power_generator": "无限能源（指核聚变",
 
   "_comment": "Items",
+  "itemGroup.flycycle": "Flycycle",
   "item.flycycle.flycycle": "增强版竹蜻蜓（不是",
 
   "_comment": "KeyBindings",
