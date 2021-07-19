@@ -8,7 +8,6 @@ import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ClassInheritanceMultiMap;
 import net.minecraft.util.Direction;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.biome.Biome;
 import net.minecraftforge.common.capabilities.Capability;
@@ -64,8 +63,7 @@ public class InfPowerGeneratorBlockEntity extends TileEntity implements ITickabl
     }
 
     private boolean waterAround() {
-        BlockPos.Mutable mutable = getBlockPos().mutable();
-        for(Direction direction : Direction.values()) if(level.isWaterAt(mutable.move(direction))) return true;
+        for(Direction direction : Direction.values()) if(level.isWaterAt(getBlockPos().relative(direction))) return true;
         return false;
     }
 
