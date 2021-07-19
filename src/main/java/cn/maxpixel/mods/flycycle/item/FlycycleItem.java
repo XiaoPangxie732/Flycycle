@@ -85,7 +85,6 @@ public class FlycycleItem extends Item {
                                    float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks,
                                    float netHeadYaw, float headPitch) {
                     followBodyRotations(livingEntity, model.engine);
-                    model.partialTicks = partialTicks;
                     model.renderToBuffer(matrixStack, ItemRenderer.getFoilBuffer(renderTypeBuffer, model.renderType(FlycycleItemModel.MODEL),
                             false, stack.hasFoil()), light, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
                 }
