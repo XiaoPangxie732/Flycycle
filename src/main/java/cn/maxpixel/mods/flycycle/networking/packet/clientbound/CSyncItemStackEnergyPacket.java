@@ -49,7 +49,6 @@ public class CSyncItemStackEnergyPacket {
                         .map(FlycycleItem.ChangeableEnergyStorage.class::cast)
                         .ifPresent(storage -> storage.setEnergy(energy));
             }
-        });
-        ctx.setPacketHandled(true);
+        }).whenComplete((ret, err) -> ctx.setPacketHandled(true));
     }
 }

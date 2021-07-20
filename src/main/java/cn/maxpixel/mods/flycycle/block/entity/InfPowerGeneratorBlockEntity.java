@@ -1,6 +1,7 @@
 package cn.maxpixel.mods.flycycle.block.entity;
 
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.profiler.IProfiler;
@@ -15,9 +16,13 @@ import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.EnergyStorage;
 import net.minecraftforge.energy.IEnergyStorage;
+import top.theillusivec4.curios.api.CuriosApi;
+import top.theillusivec4.curios.api.type.capability.ICuriosItemHandler;
+import top.theillusivec4.curios.api.type.inventory.IDynamicStackHandler;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Map;
 import java.util.Objects;
 
 import static net.minecraftforge.energy.CapabilityEnergy.ENERGY;
@@ -57,7 +62,7 @@ public class InfPowerGeneratorBlockEntity extends TileEntity implements ITickabl
         toExtract.getCapability(ENERGY)
                 .filter(IEnergyStorage::canReceive)
                 .ifPresent(energy -> energy.receiveEnergy(
-                        energyStorage.orElse(new EnergyStorage(-1))
+                        energyStorage.orElseGet(() -> new EnergyStorage(-1))
                                 .extractEnergy(energy.getMaxEnergyStored() - energy.getEnergyStored(),false),
                         false));
     }
@@ -74,10 +79,10 @@ public class InfPowerGeneratorBlockEntity extends TileEntity implements ITickabl
         if(hasLevel() && !level.isClientSide && level.isLoaded(getBlockPos()) &&
                 level.getBiome(getBlockPos()).getBiomeCategory() == Biome.Category.OCEAN && waterAround()) {
             profiler.popPush("extractEnergy");
-            int minX = -100 + getBlockPos().getX() >> 4;
-            int minZ = -100 + getBlockPos().getZ() >> 4;
-            int maxX = 100 + getBlockPos().getX() >> 4;
-            int maxZ = 100 + getBlockPos().getZ() >> 4;
+            int minX = -10 + (getBlockPos().getX() >> 4);
+            int minZ = -10 + (getBlockPos().getZ() >> 4);
+            int maxX = 10 + (getBlockPos().getX() >> 4);
+            int maxZ = 10 + (getBlockPos().getZ() >> 4);
             ChunkPos.rangeClosed(new ChunkPos(minX, minZ), new ChunkPos(maxX, maxZ)).parallel()
                     .map(pos -> level.getChunkSource().getChunkNow(pos.x, pos.z))
                     .filter(Objects::nonNull)
@@ -89,6 +94,14 @@ public class InfPowerGeneratorBlockEntity extends TileEntity implements ITickabl
                                     ((PlayerEntity) entity).inventory.items.parallelStream().forEach(this::extractEnergy);
                                     ((PlayerEntity) entity).inventory.armor.parallelStream().forEach(this::extractEnergy);
                                     extractEnergy(((PlayerEntity) entity).inventory.offhand.get(0));
+                                    CuriosApi.getCuriosHelper()
+                                            .getCuriosHandler((LivingEntity) entity)
+                                            .map(ICuriosItemHandler::getCurios)
+                                            .map(Map::values)
+                                            .ifPresent(handlers -> handlers.forEach(handler -> {
+                                                IDynamicStackHandler stacks = handler.getStacks();
+                                                for(int i = 0; i < stacks.getSlots(); i++) extractEnergy(stacks.getStackInSlot(i));
+                                            }));
                                 } else if(entity instanceof IInventory) {
                                     IInventory inv = (IInventory) entity;
                                     for(int i = 0; i < inv.getContainerSize(); i++) extractEnergy(inv.getItem(i));

@@ -21,15 +21,22 @@ public class FlycycleItemModel extends EntityModel<Entity> {
         texWidth = 64;
         texHeight = 64;
 
+        float x = -1.f;
+        float y = 12.f;
+        float z = 3.f;
+
         engine = new ModelRenderer(this);
-        engine.texOffs(0, 0).addBox(-1.5F, -1.0F, -1.0F, 5.0F, 1.0F, 5.0F, 0.0F, false);
-        engine.texOffs(20, 6).addBox(-0.5F, -14.0F, -1.0F, 4.0F, 13.0F, 1.0F, 0.0F, false);
-        engine.texOffs(10, 6).addBox(2.5F, -14.0F, 0.0F, 1.0F, 13.0F, 4.0F, 0.0F, false);
-        engine.texOffs(30, 6).addBox(-1.5F, -14.0F, -1.0F, 1.0F, 13.0F, 4.0F, 0.0F, false);
-        engine.texOffs(0, 6).addBox(-1.5F, -14.0F, 3.0F, 4.0F, 13.0F, 1.0F, 0.0F, false);
+        engine.texOffs(0, 0).addBox(-1.5F + x, -1.0F + y, -1.0F + z, 5.0F, 1.0F, 5.0F, 0.0F, false);
+        engine.texOffs(20, 6).addBox(-0.5F + x, -14.0F + y, -1.0F + z, 4.0F, 13.0F, 1.0F, 0.0F, false);
+        engine.texOffs(10, 6).addBox(2.5F + x, -14.0F + y, 0.0F + z, 1.0F, 13.0F, 4.0F, 0.0F, false);
+        engine.texOffs(30, 6).addBox(-1.5F + x, -14.0F + y, -1.0F + z, 1.0F, 13.0F, 4.0F, 0.0F, false);
+        engine.texOffs(0, 6).addBox(-1.5F + x, -14.0F + y, 3.0F + z, 4.0F, 13.0F, 1.0F, 0.0F, false);
+
+        x = 0.f;
+        z = -1.f;
 
         stick_straight = new ModelRenderer(this);
-        stick_straight.texOffs(0, 0).addBox(-0.5F, -15.0F, 5.0F, 1.0F, 14.0F, 1.0F, 0.0F, false);
+        stick_straight.texOffs(0, 0).addBox(-0.5F + x, -15.0F + y, 5.0F + z, 1.0F, 14.0F, 1.0F, 0.0F, false);
     }
 
     @Override
@@ -40,9 +47,6 @@ public class FlycycleItemModel extends EntityModel<Entity> {
     public void renderToBuffer(MatrixStack matrixStack, IVertexBuilder buffer, int packedLight, int packedOverlay,
                                float red, float green, float blue, float alpha) {
         stick_straight.copyFrom(engine);
-        engine.x += -1.0F;
-        engine.z += 5.0F;
-        stick_straight.z += 1.0F;
 
         engine.render(matrixStack, buffer, packedLight, packedOverlay);
         stick_straight.render(matrixStack, buffer, packedLight, packedOverlay);

@@ -3,9 +3,15 @@ package cn.maxpixel.mods.flycycle.item;
 import cn.maxpixel.mods.flycycle.Flycycle;
 import cn.maxpixel.mods.flycycle.KeyBindings;
 import cn.maxpixel.mods.flycycle.model.item.FlycycleItemModel;
+import cn.maxpixel.mods.flycycle.networking.NetworkManager;
+import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CSyncCurioItemStackEnergyPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CSyncItemStackEnergyPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.serverbound.SSyncCurioItemStackEnergyPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.serverbound.SSyncItemStackEnergyPacket;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import mcp.MethodsReturnNonnullByDefault;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -14,13 +20,16 @@ import net.minecraft.client.renderer.entity.model.BipedModel;
 import net.minecraft.client.renderer.entity.model.EntityModel;
 import net.minecraft.client.renderer.model.ModelRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.World;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.capabilities.ICapabilitySerializable;
@@ -28,6 +37,8 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.CapabilityEnergy;
 import net.minecraftforge.energy.EnergyStorage;
+import net.minecraftforge.energy.IEnergyStorage;
+import net.minecraftforge.fml.network.PacketDistributor;
 import top.theillusivec4.curios.api.CuriosCapability;
 import top.theillusivec4.curios.api.SlotContext;
 import top.theillusivec4.curios.api.type.capability.ICurio;
@@ -42,7 +53,6 @@ import java.util.Objects;
 public class FlycycleItem extends Item {
     public static final String NAME = "flycycle";
     private static final int ENERGY_CAPACITY = 200;
-    private boolean engineStatus = false;
 
     public FlycycleItem() {
         super(new Properties()
@@ -57,7 +67,24 @@ public class FlycycleItem extends Item {
         return new ICapabilitySerializable<CompoundNBT>() {
             private final LazyOptional<ChangeableEnergyStorage> ENERGY = LazyOptional.of(ChangeableEnergyStorage::new);
             private final LazyOptional<ICurio> CURIO = LazyOptional.of(() -> new ICurio() {
+                private boolean engineStatus = false;
                 private final FlycycleItemModel model = new FlycycleItemModel();
+
+                @Override
+                public void curioTick(String identifier, int index, LivingEntity player) {
+                    ENERGY.filter(storage -> storage.needUpdate && player instanceof ServerPlayerEntity)
+                            .ifPresent(storage -> {
+                                NetworkManager.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) player),
+                                        new SSyncCurioItemStackEnergyPacket(player.getId(), index, storage.getEnergyStored()));
+                                storage.needUpdate = false;
+                            });
+                    ENERGY.filter(storage -> storage.needUpdate && player instanceof ClientPlayerEntity)
+                            .ifPresent(storage -> {
+                                NetworkManager.send(PacketDistributor.SERVER.noArg(),
+                                        new CSyncCurioItemStackEnergyPacket(player.getId(), index, storage.getEnergyStored()));
+                                storage.needUpdate = false;
+                            });
+                }
 
                 @Override
                 public void curioAnimate(String identifier, int slot, LivingEntity player) {
@@ -114,7 +141,38 @@ public class FlycycleItem extends Item {
 
     @Override
     public boolean showDurabilityBar(ItemStack stack) {
-        return false;
+        return true;
+    }
+
+    @Override
+    public double getDurabilityForDisplay(ItemStack stack) {
+        IEnergyStorage storage = stack.getCapability(CapabilityEnergy.ENERGY).orElseGet(() -> new EnergyStorage(0));
+        return (storage.getMaxEnergyStored() - storage.getEnergyStored()) / (double) storage.getMaxEnergyStored();
+    }
+
+    @Override
+    public void inventoryTick(ItemStack itemStack, World level, Entity player, int slot, boolean selected) {
+        if(!level.isClientSide) {
+            itemStack.getCapability(CapabilityEnergy.ENERGY)
+                    .filter(ChangeableEnergyStorage.class::isInstance)
+                    .map(ChangeableEnergyStorage.class::cast)
+                    .filter(storage -> storage.needUpdate && player instanceof ServerPlayerEntity)
+                    .ifPresent(storage -> {
+                        NetworkManager.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) player),
+                                new SSyncItemStackEnergyPacket(player.getId(), slot, storage.getEnergyStored()));
+                        storage.needUpdate = false;
+                    });
+        } else {
+            itemStack.getCapability(CapabilityEnergy.ENERGY)
+                    .filter(ChangeableEnergyStorage.class::isInstance)
+                    .map(ChangeableEnergyStorage.class::cast)
+                    .filter(storage -> storage.needUpdate && player instanceof ClientPlayerEntity)
+                    .ifPresent(storage -> {
+                        NetworkManager.send(PacketDistributor.SERVER.noArg(),
+                                new CSyncItemStackEnergyPacket(player.getId(), slot, storage.getEnergyStored()));
+                        storage.needUpdate = false;
+                    });
+        }
     }
 
     private static void followBodyRotations(LivingEntity livingEntity, ModelRenderer renderer) {
@@ -130,20 +188,37 @@ public class FlycycleItem extends Item {
     }
 
     public static class ChangeableEnergyStorage extends EnergyStorage {
+        private boolean needUpdate;
+
         public ChangeableEnergyStorage() {
             super(ENERGY_CAPACITY, ENERGY_CAPACITY, 0);
         }
 
         private boolean use() {
-            if(energy - 50 > 0) {
+            if(energy >= 50) {
                 energy -= 50;
+                needUpdate = true;
                 return true;
             }
             return false;
+        }
+
+        @Override
+        public int receiveEnergy(int maxReceive, boolean simulate) {
+            int received = super.receiveEnergy(maxReceive, simulate);
+            if(!simulate && received > 0) {
+                needUpdate = true;
+            }
+            return received;
         }
 
         public void setEnergy(int energy) {
             this.energy = MathHelper.clamp(energy, 0, capacity);
         }
     }
+
+//    private static class EngineStatusSyncer {
+//        private final UUID player;
+//
+//    }
 }
