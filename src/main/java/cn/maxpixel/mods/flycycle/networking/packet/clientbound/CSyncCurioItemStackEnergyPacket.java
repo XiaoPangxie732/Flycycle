@@ -13,7 +13,7 @@ import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
 import java.util.function.Supplier;
 
 public class CSyncCurioItemStackEnergyPacket {
-    static {
+    public static void register() {
         NetworkManager.registerMessage(CSyncCurioItemStackEnergyPacket.class,
                 CSyncCurioItemStackEnergyPacket::encode,
                 CSyncCurioItemStackEnergyPacket::decode,

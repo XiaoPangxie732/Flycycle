@@ -1,5 +1,6 @@
 package cn.maxpixel.mods.flycycle.block.entity;
 
+import cn.maxpixel.mods.flycycle.util.ChunkPosUtil;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -9,7 +10,6 @@ import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ClassInheritanceMultiMap;
 import net.minecraft.util.Direction;
-import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.biome.Biome;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
@@ -79,16 +79,15 @@ public class InfPowerGeneratorBlockEntity extends TileEntity implements ITickabl
         if(hasLevel() && !level.isClientSide && level.isLoaded(getBlockPos()) &&
                 level.getBiome(getBlockPos()).getBiomeCategory() == Biome.Category.OCEAN && waterAround()) {
             profiler.popPush("extractEnergy");
-            int minX = -10 + (getBlockPos().getX() >> 4);
-            int minZ = -10 + (getBlockPos().getZ() >> 4);
-            int maxX = 10 + (getBlockPos().getX() >> 4);
-            int maxZ = 10 + (getBlockPos().getZ() >> 4);
-            ChunkPos.rangeClosed(new ChunkPos(minX, minZ), new ChunkPos(maxX, maxZ)).parallel()
-                    .map(pos -> level.getChunkSource().getChunkNow(pos.x, pos.z))
+            int minX = -20 + (getBlockPos().getX() >> 4);
+            int minZ = -20 + (getBlockPos().getZ() >> 4);
+            int maxX = 20 + (getBlockPos().getX() >> 4);
+            int maxZ = 20 + (getBlockPos().getZ() >> 4);
+            ChunkPosUtil.rangeClosed(minX, minZ, maxX, maxZ, level)
                     .filter(Objects::nonNull)
                     .forEach(chunk -> {
                         for(ClassInheritanceMultiMap<Entity> entitySection : chunk.getEntitySections()) {
-                            entitySection.parallelStream().forEach(entity -> {
+                            entitySection.forEach(entity -> {
                                 extractEnergy(entity);
                                 if(entity instanceof PlayerEntity) {
                                     ((PlayerEntity) entity).inventory.items.parallelStream().forEach(this::extractEnergy);
@@ -108,11 +107,13 @@ public class InfPowerGeneratorBlockEntity extends TileEntity implements ITickabl
                                 }
                             });
                         }
-                        chunk.getBlockEntities().values().parallelStream().filter(be -> level.isLoaded(be.getBlockPos())).forEach(be -> {
-                            extractEnergy(be);
-                            if(be instanceof IInventory) {
-                                IInventory inv = (IInventory) be;
-                                for(int i = 0; i < inv.getContainerSize(); i++) extractEnergy(inv.getItem(i));
+                        chunk.getBlockEntities().forEach((bp, be) -> {
+                            if(level.isLoaded(be.getBlockPos())) {
+                                extractEnergy(be);
+                                if(be instanceof IInventory) {
+                                    IInventory inv = (IInventory) be;
+                                    for(int i = 0; i < inv.getContainerSize(); i++) extractEnergy(inv.getItem(i));
+                                }
                             }
                         });
                     });

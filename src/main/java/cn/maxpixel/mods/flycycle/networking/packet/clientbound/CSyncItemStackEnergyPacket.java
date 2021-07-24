@@ -10,7 +10,7 @@ import net.minecraftforge.fml.network.NetworkEvent;
 import java.util.function.Supplier;
 
 public class CSyncItemStackEnergyPacket {
-    static {
+    public static void register() {
         NetworkManager.registerMessage(CSyncItemStackEnergyPacket.class,
                 CSyncItemStackEnergyPacket::encode,
                 CSyncItemStackEnergyPacket::decode,

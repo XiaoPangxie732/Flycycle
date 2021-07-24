@@ -1,6 +1,12 @@
 package cn.maxpixel.mods.flycycle.networking;
 
 import cn.maxpixel.mods.flycycle.Flycycle;
+import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CAnimationStateChangedPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CSyncCurioItemStackEnergyPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CSyncItemStackEnergyPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.serverbound.SBroadcastAnimationStateChangedPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.serverbound.SSyncCurioItemStackEnergyPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.serverbound.SSyncItemStackEnergyPacket;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.network.NetworkDirection;
@@ -15,7 +21,15 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class NetworkManager {
-    public static void init() {}
+    public static void init() {
+        SSyncItemStackEnergyPacket.register();
+        SSyncCurioItemStackEnergyPacket.register();
+        SBroadcastAnimationStateChangedPacket.register();
+
+        CSyncItemStackEnergyPacket.register();
+        CSyncCurioItemStackEnergyPacket.register();
+        CAnimationStateChangedPacket.register();
+    }
     private static final String PROTOCOL_VERSION = "1";
     private static int messageIndex = 0;
     private static final SimpleChannel CHANNEL = NetworkRegistry.ChannelBuilder
@@ -42,5 +56,9 @@ public class NetworkManager {
 
     public static <MSG> void send(PacketDistributor.PacketTarget target, MSG message) {
         CHANNEL.send(target, message);
+    }
+
+    public static <MSG> void sendToServer(MSG message) {
+        CHANNEL.sendToServer(message);
     }
 }
