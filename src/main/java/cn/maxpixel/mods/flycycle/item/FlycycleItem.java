@@ -227,17 +227,21 @@ public class FlycycleItem extends Item {
                 }).start();// test only
             }
             model.partialTicks = partialTicks;
-            if(lastEvent != null && lastEvent.slot == index) {
-                switch(lastEvent.state) {
-                    case FlycycleItemModel.STARTING_STATE:
-                        model.startingState();
-                        break;
-                    case FlycycleItemModel.STOPPING_STATE:
-                        model.stoppingState();
-                        break;
-                    default: throw new IllegalStateException();
+            if(lastEvent != null) {
+                if(lastEvent.getPlayer().getId() != livingEntity.getId()) {
+                    lastEvent = null;
+                } else if(lastEvent.slot == index && lastEvent.state != model.getState()) {
+                    switch(lastEvent.state) {
+                        case FlycycleItemModel.STARTING_STATE:
+                            model.startingState();
+                            break;
+                        case FlycycleItemModel.STOPPING_STATE:
+                            model.stoppingState();
+                            break;
+                        default: throw new IllegalStateException();
+                    }
+                    lastEvent = null;
                 }
-                lastEvent = null;
             }
             model.setupAnim((AbstractClientPlayerEntity) livingEntity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
             model.renderToBuffer(matrixStack, ItemRenderer.getFoilBuffer(renderTypeBuffer, model.renderType(FlycycleItemModel.MODEL),

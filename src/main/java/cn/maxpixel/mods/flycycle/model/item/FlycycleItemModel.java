@@ -32,8 +32,11 @@ public class FlycycleItemModel<T extends AbstractClientPlayerEntity> extends Ent
     private static final byte STARTED_STATE = 2;
     public static final byte STOPPING_STATE = 3;
 
-    public final ModelRenderer engine;
-    private final ModelRenderer stick_straight;
+    private final ModelRenderer engine;
+    private final ModelRenderer stick;
+    private final ModelRenderer straight;
+    private final ModelRenderer left;
+    private final ModelRenderer right;
 
     public float partialTicks;
 
@@ -49,9 +52,23 @@ public class FlycycleItemModel<T extends AbstractClientPlayerEntity> extends Ent
         engine.texOffs(0, 6).addBox(-2.5F, -2.0F, 6.0F, 4.0F, 13.0F, 1.0F, 0.0F, false);
         engine.texOffs(0, 0).addBox(-0.5F, -9.0F, 4.0F, 1.0F, 20.0F, 1.0F, 0.0F, false);
 
-        stick_straight = new ModelRenderer(this);
-        stick_straight.visible = false;
-        stick_straight.texOffs(0, 0).addBox(-0.5F, -9.0F, 4.0F, 1.0F, 10.0F, 1.0F, 0.0F, false);
+        stick = new ModelRenderer(this);
+        stick.visible = false;
+
+        straight = new ModelRenderer(this);
+        straight.visible = false;
+        stick.addChild(straight);
+        straight.texOffs(0, 0).addBox(-0.5F, -19.0F, 4.0F, 1.0F, 10.0F, 1.0F, 0.0F, false);
+
+        left = new ModelRenderer(this);
+        left.visible = false;
+        stick.addChild(left);
+        left.texOffs(0, 0).addBox(0.5F, -0.5F, 4.0F, 15.0F, 1.0F, 1.0F, 0.0F, false);
+
+        right = new ModelRenderer(this);
+        right.visible = false;
+        stick.addChild(right);
+        right.texOffs(0, 0).addBox(-15.5F, -0.5F, 4.0F, 15.0F, 1.0F, 1.0F, 0.0F, false);
     }
 
     public void startingState() {
@@ -86,39 +103,59 @@ public class FlycycleItemModel<T extends AbstractClientPlayerEntity> extends Ent
     public void setupAnim(T player, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
         EntityRenderer<? super T> renderer = Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(player);
         engine.copyFrom(((IEntityRenderer<T, PlayerModel<T>>) renderer).getModel().body);
-        stick_straight.copyFrom(engine);
+        stick.copyFrom(engine);
 
         time = Animation.getWorldTime(Minecraft.getInstance().level, partialTicks) - timeWhenStateChanged;
     }
+
+    private static final float minY = 10.f / 16.f;
 
     @Override
     public void renderToBuffer(MatrixStack matrixStack, IVertexBuilder buffer, int packedLight, int packedOverlay,
                                float red, float green, float blue, float alpha) {
         engine.render(matrixStack, buffer, packedLight, packedOverlay);
 
-        float maxY = -10.f / 16.f;
         switch(state) {
             case STARTING_STATE:
-                stick_straight.visible = true;
+                stick.visible = true;
                 if(time > 1.f) startedState();
-                if(time <= .25f) {
-                    renderStickStraight(matrixStack, buffer, packedLight, packedOverlay,
-                            MathHelper.lerp(time / .25f, 0.f, maxY));
-                } else renderStickStraight(matrixStack, buffer, packedLight, packedOverlay, maxY);
+                if(time <= .15f) {
+                    straight.visible = true;
+                    renderStick(matrixStack, buffer, packedLight, packedOverlay,
+                            () -> renderStickStraight(matrixStack, buffer, packedLight, packedOverlay,
+                                    MathHelper.lerp(time / .15f, minY, 0.f))
+                    );
+                } else {
+                    renderStick(matrixStack, buffer, packedLight, packedOverlay, () -> {
+                        straight.render(matrixStack, buffer, packedLight, packedOverlay);
+                        if(time <= .25f) {
+                            left.visible = true;
+                            right.visible = true;
+                            left.render(matrixStack, buffer, packedLight, packedOverlay);
+                            right.render(matrixStack, buffer, packedLight, packedOverlay);
+                        }
+                    });
+                }
                 break;
             case STARTED_STATE:
-                renderStickStraight(matrixStack, buffer, packedLight, packedOverlay, maxY);
+                renderStick(matrixStack, buffer, packedLight, packedOverlay, () ->
+                        straight.render(matrixStack, buffer, packedLight, packedOverlay));
                 break;
             case STOPPING_STATE:
                 break;
             case STOPPED_STATE:
-                stick_straight.visible = false;
+                stick.visible = false;
+                straight.visible = false;
                 break;
         }
     }
 
+    private void renderStick(MatrixStack matrixStack, IVertexBuilder buffer, int packedLight, int packedOverlay, Runnable children) {
+        ModelRendererUtil.render(stick, matrixStack, buffer, packedLight, packedOverlay, null, children);
+    }
+
     private void renderStickStraight(MatrixStack matrixStack, IVertexBuilder buffer, int packedLight, int packedOverlay, float y) {
-        ModelRendererUtil.render(stick_straight, matrixStack, buffer, packedLight, packedOverlay, new TransformationMatrix(
+        ModelRendererUtil.render(straight, matrixStack, buffer, packedLight, packedOverlay, new TransformationMatrix(
                 new Vector3f(0.f, y, 0.f),
                 null,null,null
         ));

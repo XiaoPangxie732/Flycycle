@@ -6,12 +6,16 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.material.PushReaction;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.LootContext;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.*;
+import net.minecraft.world.Explosion;
+import net.minecraft.world.ExplosionContext;
+import net.minecraft.world.IBlockReader;
+import net.minecraft.world.World;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -73,8 +77,8 @@ public class InfPowerGeneratorBlock extends Block {
     }
 
     @Override
-    public void destroy(IWorld level, BlockPos pos, BlockState p_176206_3_) {
-        createExplosion((World) level, pos);
+    public void playerDestroy(World level, PlayerEntity player, BlockPos pos, BlockState p_180657_4_, @Nullable TileEntity p_180657_5_, ItemStack p_180657_6_) {
+        if(!player.isCreative()) createExplosion(level, pos);
     }
 
     @Nullable
