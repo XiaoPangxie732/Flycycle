@@ -159,7 +159,6 @@ public class FlycycleItem extends Item {
     public static class FlycycleCurio implements ICurio {
         @OnlyIn(Dist.CLIENT)
         private FlycycleItemModel<AbstractClientPlayerEntity> model;
-        private boolean engineStatus = false;
         private final LazyOptional<ChangeableEnergyStorage> ENERGY;
         private final ItemStack stack;
         private AnimationStateChangedEvent lastEvent;
@@ -192,11 +191,26 @@ public class FlycycleItem extends Item {
 
         @Override
         public void curioAnimate(String identifier, int slot, LivingEntity player) {
-            if(KeyBindings.KEY_TOGGLE_ENGINE.isDown()) engineStatus = !engineStatus;
-            if(engineStatus && player instanceof ClientPlayerEntity) {
-                ENERGY.ifPresent(storage -> {
-                    if(!storage.use()) engineStatus = false;
-                });
+            if(model != null) {
+                if(player instanceof ClientPlayerEntity &&
+                        (model.getState() & (FlycycleItemModel.STARTING_STATE | FlycycleItemModel.STARTED_STATE)) != 0) {
+                    ENERGY.ifPresent(storage -> {
+                        if(!storage.use()) {
+                            NetworkManager.sendToServer(new CAnimationStateChangedPacket(player.getId(), slot, FlycycleItemModel.STOPPING_STATE));
+                        }
+                    });
+                }
+                if(KeyBindings.KEY_TOGGLE_ENGINE.isDown()) {
+                    if(model.getState() == FlycycleItemModel.STOPPED_STATE) {
+                        ENERGY.ifPresent(storage -> {
+                            if(storage.use()) {
+                                NetworkManager.sendToServer(new CAnimationStateChangedPacket(player.getId(), slot, FlycycleItemModel.STARTING_STATE));
+                            }
+                        });
+                    } else if(model.getState() == FlycycleItemModel.STARTED_STATE) {
+                        NetworkManager.sendToServer(new CAnimationStateChangedPacket(player.getId(), slot, FlycycleItemModel.STOPPING_STATE));
+                    }
+                }
             }
         }
 
@@ -218,13 +232,6 @@ public class FlycycleItem extends Item {
             if(!(livingEntity instanceof AbstractClientPlayerEntity)) return;
             if(model == null) {
                 model = new FlycycleItemModel<>();
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException ignored) {
-                    }
-                    NetworkManager.sendToServer(new CAnimationStateChangedPacket(livingEntity.getId(), index, FlycycleItemModel.STARTING_STATE));
-                }).start();// test only
             }
             model.partialTicks = partialTicks;
             if(lastEvent != null) {

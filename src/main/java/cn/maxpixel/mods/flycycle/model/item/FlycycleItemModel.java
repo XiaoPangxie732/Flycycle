@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.entity.model.PlayerModel;
 import net.minecraft.client.renderer.model.ModelRenderer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.vector.Quaternion;
 import net.minecraft.util.math.vector.TransformationMatrix;
 import net.minecraft.util.math.vector.Vector3f;
 import net.minecraftforge.api.distmarker.Dist;
@@ -27,16 +28,18 @@ public class FlycycleItemModel<T extends AbstractClientPlayerEntity> extends Ent
     private float time;
 
     private byte state = STOPPED_STATE;
-    private static final byte STOPPED_STATE = 0;
-    public static final byte STARTING_STATE = 1;
-    private static final byte STARTED_STATE = 2;
-    public static final byte STOPPING_STATE = 3;
+    public static final byte STOPPED_STATE = 1;
+    public static final byte STARTING_STATE = 2;
+    public static final byte STARTED_STATE = 4;
+    public static final byte STOPPING_STATE = 8;
 
     private final ModelRenderer engine;
-    private final ModelRenderer stick;
-    private final ModelRenderer straight;
-    private final ModelRenderer left;
-    private final ModelRenderer right;
+    private final ModelRenderer animation;
+    private final ModelRenderer stick_straight;
+    private final ModelRenderer stick_left;
+    private final ModelRenderer stick_right;
+    private final ModelRenderer prop_left;
+    private final ModelRenderer prop_right;
 
     public float partialTicks;
 
@@ -52,23 +55,37 @@ public class FlycycleItemModel<T extends AbstractClientPlayerEntity> extends Ent
         engine.texOffs(0, 6).addBox(-2.5F, -2.0F, 6.0F, 4.0F, 13.0F, 1.0F, 0.0F, false);
         engine.texOffs(0, 0).addBox(-0.5F, -9.0F, 4.0F, 1.0F, 20.0F, 1.0F, 0.0F, false);
 
-        stick = new ModelRenderer(this);
-        stick.visible = false;
+        animation = new ModelRenderer(this);
 
-        straight = new ModelRenderer(this);
-        straight.visible = false;
-        stick.addChild(straight);
-        straight.texOffs(0, 0).addBox(-0.5F, -19.0F, 4.0F, 1.0F, 10.0F, 1.0F, 0.0F, false);
+        stick_straight = new ModelRenderer(this);
+        animation.addChild(stick_straight);
+        stick_straight.texOffs(0, 0).addBox(-0.5F, -19.0F, 4.0F, 1.0F, 10.0F, 1.0F, 0.0F, false);
 
-        left = new ModelRenderer(this);
-        left.visible = false;
-        stick.addChild(left);
-        left.texOffs(0, 0).addBox(0.5F, -0.5F, 4.0F, 15.0F, 1.0F, 1.0F, 0.0F, false);
+        stick_left = new ModelRenderer(this);
+        animation.addChild(stick_left);
+        stick_left.texOffs(0, 0).addBox(0.5F, -0.5F, 4.0F, 15.0F, 1.0F, 1.0F, 0.0F, false);
 
-        right = new ModelRenderer(this);
-        right.visible = false;
-        stick.addChild(right);
-        right.texOffs(0, 0).addBox(-15.5F, -0.5F, 4.0F, 15.0F, 1.0F, 1.0F, 0.0F, false);
+        stick_right = new ModelRenderer(this);
+        animation.addChild(stick_right);
+        stick_right.texOffs(0, 0).addBox(-15.5F, -0.5F, 4.0F, 15.0F, 1.0F, 1.0F, 0.0F, false);
+
+        prop_left = new ModelRenderer(this);
+        prop_left.setPos(15.0F, 0.0F, 4.5F);
+        animation.addChild(prop_left);
+        prop_left.texOffs(0, 0).addBox(-0.5F, -21.0F, -0.5F, 1.0F, 2.0F, 1.0F, 0.0F, false);
+        prop_left.texOffs(0, 0).addBox(0.5F, -21.0F, -0.5F, 6.0F, 1.0F, 1.0F, 0.0F, false);
+        prop_left.texOffs(0, 0).addBox(-0.5F, -21.0F, -6.5F, 1.0F, 1.0F, 6.0F, 0.0F, false);
+        prop_left.texOffs(0, 0).addBox(-6.5F, -21.0F, -0.5F, 6.0F, 1.0F, 1.0F, 0.0F, false);
+        prop_left.texOffs(0, 0).addBox(-0.5F, -21.0F, 0.5F, 1.0F, 1.0F, 6.0F, 0.0F, false);
+
+        prop_right = new ModelRenderer(this);
+        prop_right.setPos(-15.0F, 0.0F, 4.5F);
+        animation.addChild(prop_right);
+        prop_right.texOffs(0, 0).addBox(-0.5F, -21.0F, -0.5F, 1.0F, 2.0F, 1.0F, 0.0F, false);
+        prop_right.texOffs(0, 0).addBox(0.5F, -21.0F, -0.5F, 6.0F, 1.0F, 1.0F, 0.0F, false);
+        prop_right.texOffs(0, 0).addBox(-0.5F, -21.0F, -6.5F, 1.0F, 1.0F, 6.0F, 0.0F, false);
+        prop_right.texOffs(0, 0).addBox(-6.5F, -21.0F, -0.5F, 6.0F, 1.0F, 1.0F, 0.0F, false);
+        prop_right.texOffs(0, 0).addBox(-0.5F, -21.0F, 0.5F, 1.0F, 1.0F, 6.0F, 0.0F, false);
     }
 
     public void startingState() {
@@ -103,7 +120,7 @@ public class FlycycleItemModel<T extends AbstractClientPlayerEntity> extends Ent
     public void setupAnim(T player, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
         EntityRenderer<? super T> renderer = Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(player);
         engine.copyFrom(((IEntityRenderer<T, PlayerModel<T>>) renderer).getModel().body);
-        stick.copyFrom(engine);
+        animation.copyFrom(engine);
 
         time = Animation.getWorldTime(Minecraft.getInstance().level, partialTicks) - timeWhenStateChanged;
     }
@@ -117,47 +134,98 @@ public class FlycycleItemModel<T extends AbstractClientPlayerEntity> extends Ent
 
         switch(state) {
             case STARTING_STATE:
-                stick.visible = true;
-                if(time > 1.f) startedState();
+                animation.visible = true;
+                if(time > .25f) startedState();
                 if(time <= .15f) {
-                    straight.visible = true;
-                    renderStick(matrixStack, buffer, packedLight, packedOverlay,
-                            () -> renderStickStraight(matrixStack, buffer, packedLight, packedOverlay,
-                                    MathHelper.lerp(time / .15f, minY, 0.f))
-                    );
+                    stick_straight.visible = true;
+                    animationRender(matrixStack, buffer, packedLight, packedOverlay, () -> {
+                        ModelRendererUtil.render(stick_straight, matrixStack, buffer, packedLight, packedOverlay, new TransformationMatrix(
+                                new Vector3f(0.f, MathHelper.lerp(time / .15f, minY, 0.f), 0.f),
+                                Quaternion.ONE, ONE, Quaternion.ONE
+                        ));
+                    });
                 } else {
-                    renderStick(matrixStack, buffer, packedLight, packedOverlay, () -> {
-                        straight.render(matrixStack, buffer, packedLight, packedOverlay);
+                    animationRender(matrixStack, buffer, packedLight, packedOverlay, () -> {
+                        stick_straight.render(matrixStack, buffer, packedLight, packedOverlay);
                         if(time <= .25f) {
-                            left.visible = true;
-                            right.visible = true;
-                            left.render(matrixStack, buffer, packedLight, packedOverlay);
-                            right.render(matrixStack, buffer, packedLight, packedOverlay);
+                            stick_left.visible = true;
+                            stick_right.visible = true;
+                            renderSides(matrixStack, buffer, packedLight, packedOverlay, (time - .15f) / .1f);
+                        } else {
+                            renderSides(matrixStack, buffer, packedLight, packedOverlay, 1.f);
+                            prop_left.visible = true;
+                            prop_right.visible = true;
                         }
                     });
                 }
                 break;
             case STARTED_STATE:
-                renderStick(matrixStack, buffer, packedLight, packedOverlay, () ->
-                        straight.render(matrixStack, buffer, packedLight, packedOverlay));
+                animationRender(matrixStack, buffer, packedLight, packedOverlay, () -> {
+                    stick_straight.render(matrixStack, buffer, packedLight, packedOverlay);
+                    renderSides(matrixStack, buffer, packedLight, packedOverlay, 1.f);
+                    renderProps(matrixStack, buffer, packedLight, packedOverlay, time + 1.f);
+                });
                 break;
             case STOPPING_STATE:
+                if(time > .3f) stoppedState();
+                if(time <= .05f) {
+                    animationRender(matrixStack, buffer, packedLight, packedOverlay, () -> {
+                        stick_straight.render(matrixStack, buffer, packedLight, packedOverlay);
+                        renderSides(matrixStack, buffer, packedLight, packedOverlay, 1.f);
+                        renderProps(matrixStack, buffer, packedLight, packedOverlay, 1.f - (time / .05f));
+                    });
+                } else {
+                    prop_left.visible = false;
+                    prop_right.visible = false;
+                    animationRender(matrixStack, buffer, packedLight, packedOverlay, () -> {
+                        if(time <= .15f) {
+                            stick_straight.render(matrixStack, buffer, packedLight, packedOverlay);
+                            renderSides(matrixStack, buffer, packedLight, packedOverlay, 1.f - ((time - .05f) / .1f));
+                        } else {
+                            stick_left.visible = false;
+                            stick_right.visible = false;
+                            ModelRendererUtil.render(stick_straight, matrixStack, buffer, packedLight, packedOverlay, new TransformationMatrix(
+                                    new Vector3f(0.f, MathHelper.lerp((time - .15f) / .15f, 0.f, minY), 0.f),
+                                    Quaternion.ONE, ONE, Quaternion.ONE
+                            ));
+                        }
+                    });
+                }
                 break;
             case STOPPED_STATE:
-                stick.visible = false;
-                straight.visible = false;
+                stick_straight.visible = false;
+                animation.visible = false;
                 break;
         }
     }
 
-    private void renderStick(MatrixStack matrixStack, IVertexBuilder buffer, int packedLight, int packedOverlay, Runnable children) {
-        ModelRendererUtil.render(stick, matrixStack, buffer, packedLight, packedOverlay, null, children);
+    private static final Vector3f ZERO = new Vector3f();
+    private static final Vector3f ONE = new Vector3f(1.f, 1.f, 1.f);
+
+    private void animationRender(MatrixStack matrixStack, IVertexBuilder buffer, int packedLight, int packedOverlay, Runnable children) {
+        ModelRendererUtil.render(animation, matrixStack, buffer, packedLight, packedOverlay, null, children);
     }
 
-    private void renderStickStraight(MatrixStack matrixStack, IVertexBuilder buffer, int packedLight, int packedOverlay, float y) {
-        ModelRendererUtil.render(straight, matrixStack, buffer, packedLight, packedOverlay, new TransformationMatrix(
-                new Vector3f(0.f, y, 0.f),
-                null,null,null
+    private static final Vector3f sideTranslate = new Vector3f(0.f, -18.5f / 16.f, 0.f);
+    private void renderSides(MatrixStack matrixStack, IVertexBuilder buffer, int packedLight, int packedOverlay, float progress) {
+        float angle = progress >= 1.f ? 0.f : MathHelper.lerp(progress, 90.f, 0.f);
+        ModelRendererUtil.render(stick_left, matrixStack, buffer, packedLight, packedOverlay, new TransformationMatrix(
+                sideTranslate, Quaternion.ONE, ONE,
+                new Quaternion(0.f, 0.f, angle, true)
+        ));
+        ModelRendererUtil.render(stick_right, matrixStack, buffer, packedLight, packedOverlay, new TransformationMatrix(
+                sideTranslate, Quaternion.ONE, ONE,
+                new Quaternion(0.f, 0.f, -angle, true)
+        ));
+    }
+
+    private void renderProps(MatrixStack matrixStack, IVertexBuilder buffer, int packedLight, int packedOverlay, float progress) {
+        float angle = (float) (progress * 20 * Math.PI);
+        ModelRendererUtil.render(prop_left, matrixStack, buffer, packedLight, packedOverlay, new TransformationMatrix(
+                ZERO, Quaternion.ONE, ONE, new Quaternion(0.f, -angle, 0.f, false)
+        ));
+        ModelRendererUtil.render(prop_right, matrixStack, buffer, packedLight, packedOverlay, new TransformationMatrix(
+                ZERO, Quaternion.ONE, ONE, new Quaternion(0.f, angle, 0.f, false)
         ));
     }
 }

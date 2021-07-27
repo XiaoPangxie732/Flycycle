@@ -8,5 +8,6 @@
 
   "_comment": "Key Bindings",
   "key.flycycle.categories": "Flycycle Key Settings",
-  "key.flycycle.fly": "Hold to start flying"
+  "key.flycycle.fly": "Hold to fly after engine start",
+  "key.flycycle.toggle_engine": "Toggle engine"
 }

@@ -15,7 +15,7 @@ apply plugin: 'net.minecraftforge.gradle'
 
 group = 'cn.maxpixel.mods'
 base.archivesName = 'flycycle'
-version = '1.16.5-0.0.1.0'
+version = '1.16.5-0.1.0'
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(8) // Mojang ships Java 8 to end users, so your mod should target Java 8.
 

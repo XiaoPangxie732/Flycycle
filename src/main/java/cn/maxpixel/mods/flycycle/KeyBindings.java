@@ -23,7 +23,7 @@ public class KeyBindings {
     }
 
     public static final KeyBinding KEY_FLY = makeKeyBinding("fly", GLFW.GLFW_KEY_SPACE);
-    public static final KeyBinding KEY_TOGGLE_ENGINE = makeKeyBinding("toggle_engine", GLFW.GLFW_KEY_G);
+    public static final KeyBinding KEY_TOGGLE_ENGINE = makeKeyBinding("toggle_engine", GLFW.GLFW_KEY_Z);
 
     @SubscribeEvent
     public static void register(FMLClientSetupEvent event) {
