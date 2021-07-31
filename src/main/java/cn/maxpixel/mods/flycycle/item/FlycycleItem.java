@@ -3,9 +3,11 @@ package cn.maxpixel.mods.flycycle.item;
 import cn.maxpixel.mods.flycycle.Flycycle;
 import cn.maxpixel.mods.flycycle.KeyBindings;
 import cn.maxpixel.mods.flycycle.event.player.AnimationStateChangedEvent;
+import cn.maxpixel.mods.flycycle.event.player.EngineWorkEvent;
 import cn.maxpixel.mods.flycycle.model.item.FlycycleItemModel;
 import cn.maxpixel.mods.flycycle.networking.NetworkManager;
 import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CAnimationStateChangedPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CEngineWorkPacket;
 import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CSyncCurioItemStackEnergyPacket;
 import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CSyncItemStackEnergyPacket;
 import cn.maxpixel.mods.flycycle.networking.packet.serverbound.SSyncCurioItemStackEnergyPacket;
@@ -19,6 +21,8 @@ import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.Pose;
+import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -28,6 +32,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
@@ -37,7 +42,6 @@ import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.CapabilityEnergy;
 import net.minecraftforge.energy.EnergyStorage;
 import net.minecraftforge.energy.IEnergyStorage;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.network.PacketDistributor;
 import top.theillusivec4.curios.api.CuriosCapability;
@@ -48,12 +52,18 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Objects;
+import java.util.UUID;
 
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
 public class FlycycleItem extends Item {
     public static final String NAME = "flycycle";
     private static final int ENERGY_CAPACITY = 200;
+    private static final AttributeModifier SPEED_MODIFIER = new AttributeModifier(
+            UUID.fromString("A09C5FFC-3230-46B3-8F86-0BE99C5215FE"),
+            "effect." + Flycycle.MODID + ".swimming_speed",
+            2., AttributeModifier.Operation.MULTIPLY_BASE
+    );
 
     public FlycycleItem() {
         super(new Properties()
@@ -157,6 +167,7 @@ public class FlycycleItem extends Item {
     }
 
     public static class FlycycleCurio implements ICurio {
+        private EngineWorkEvent engineWork;
         @OnlyIn(Dist.CLIENT)
         private FlycycleItemModel<AbstractClientPlayerEntity> model;
         private final LazyOptional<ChangeableEnergyStorage> ENERGY;
@@ -166,16 +177,40 @@ public class FlycycleItem extends Item {
         private FlycycleCurio(LazyOptional<ChangeableEnergyStorage> energy, ItemStack stack) {
             this.ENERGY = energy;
             this.stack = stack;
-            if(FMLEnvironment.dist.isClient()) MinecraftForge.EVENT_BUS.register(this);
+            MinecraftForge.EVENT_BUS.addListener(this::onEngineWork);
+            if(FMLEnvironment.dist.isClient())
+                MinecraftForge.EVENT_BUS.addListener(this::onStateChanged);
         }
 
-        @SubscribeEvent
         public void onStateChanged(AnimationStateChangedEvent event) {
-            if(event.getPlayer() instanceof AbstractClientPlayerEntity) lastEvent = event;
+            lastEvent = event;
+        }
+
+        public void onEngineWork(EngineWorkEvent event) {
+            engineWork = event;
         }
 
         @Override
         public void curioTick(String identifier, int index, LivingEntity player) {
+            if(engineWork != null && player instanceof ServerPlayerEntity && engineWork.getPlayer().getId() == player.getId() &&
+                    engineWork.slot == index) {
+                if(engineWork.work) {
+                    player.fallDistance = 0.f;
+                    if(player.isSwimming()) {
+                        if(!player.getAttribute(ForgeMod.SWIM_SPEED.get()).hasModifier(SPEED_MODIFIER))
+                            player.getAttribute(ForgeMod.SWIM_SPEED.get()).addTransientModifier(SPEED_MODIFIER);
+                    } else if(player.getPose() == Pose.STANDING && !(player.isUnderWater() && player.isSprinting())) {
+                        ((ServerPlayerEntity) player).abilities.flying = true;
+                        ((ServerPlayerEntity) player).abilities.setFlyingSpeed(.15f);
+                    }
+                } else {
+                    player.getAttribute(ForgeMod.SWIM_SPEED.get()).removeModifier(SPEED_MODIFIER);
+                    ((ServerPlayerEntity) player).abilities.setFlyingSpeed(.05f);
+                    if(!((ServerPlayerEntity) player).isCreative() && !player.isSpectator()) {
+                        ((ServerPlayerEntity) player).abilities.flying = false;
+                    }
+                }
+            }
             ENERGY.filter(storage -> storage.needUpdate && player instanceof ServerPlayerEntity)
                     .ifPresent(storage -> {
                         NetworkManager.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) player),
@@ -189,16 +224,54 @@ public class FlycycleItem extends Item {
                     });
         }
 
+        private boolean engineWorkSent;
+
         @Override
         public void curioAnimate(String identifier, int slot, LivingEntity player) {
             if(model != null) {
-                if(player instanceof ClientPlayerEntity &&
-                        (model.getState() & (FlycycleItemModel.STARTING_STATE | FlycycleItemModel.STARTED_STATE)) != 0) {
-                    ENERGY.ifPresent(storage -> {
-                        if(!storage.use()) {
-                            NetworkManager.sendToServer(new CAnimationStateChangedPacket(player.getId(), slot, FlycycleItemModel.STOPPING_STATE));
+                if(lastEvent != null && player instanceof AbstractClientPlayerEntity) {
+                    if(lastEvent.getPlayer().getId() == player.getId() && lastEvent.slot == slot && lastEvent.state != model.getState()) {
+                        switch(lastEvent.state) {
+                            case FlycycleItemModel.STARTING_STATE:
+                                model.startingState();
+                                break;
+                            case FlycycleItemModel.STOPPING_STATE:
+                                model.stoppingState();
+                                NetworkManager.sendToServer(new CEngineWorkPacket(player.getId(), slot, false));
+                                engineWorkSent = false;
+                                break;
+                            default: throw new IllegalStateException();
                         }
-                    });
+                    }
+                    lastEvent = null;
+                }
+                if(player instanceof ClientPlayerEntity) {
+                    if((model.getState() & (FlycycleItemModel.STARTING_STATE | FlycycleItemModel.STARTED_STATE)) != 0) {
+                        if((model.getState() & FlycycleItemModel.STARTED_STATE) != 0) {
+                            if(!engineWorkSent) {
+                                NetworkManager.sendToServer(new CEngineWorkPacket(player.getId(), slot, true));
+                                engineWorkSent = true;
+                            }
+                            if(player.isSwimming()) {
+                                if(!player.getAttribute(ForgeMod.SWIM_SPEED.get()).hasModifier(SPEED_MODIFIER))
+                                    player.getAttribute(ForgeMod.SWIM_SPEED.get()).addTransientModifier(SPEED_MODIFIER);
+                            } else if(player.getPose() == Pose.STANDING && !(player.isUnderWater() && player.isSprinting())) {
+                                ((ClientPlayerEntity) player).abilities.flying = true;
+                                ((ClientPlayerEntity) player).abilities.setFlyingSpeed(.15f);
+                            }
+                        }
+                        ENERGY.ifPresent(storage -> {
+                            if(!storage.use()) {
+                                NetworkManager.sendToServer(new CAnimationStateChangedPacket(player.getId(), slot, FlycycleItemModel.STOPPING_STATE));
+                            }
+                        });
+                    } else {
+                        player.getAttribute(ForgeMod.SWIM_SPEED.get()).removeModifier(SPEED_MODIFIER);
+                        ((ClientPlayerEntity) player).abilities.setFlyingSpeed(.05f);
+                        if(!((ClientPlayerEntity) player).isCreative() && !player.isSpectator()) {
+                            ((ClientPlayerEntity) player).abilities.flying = false;
+                        }
+                    }
                 }
                 if(KeyBindings.KEY_TOGGLE_ENGINE.isDown()) {
                     if(model.getState() == FlycycleItemModel.STOPPED_STATE) {
@@ -230,26 +303,8 @@ public class FlycycleItem extends Item {
                            float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks,
                            float netHeadYaw, float headPitch) {
             if(!(livingEntity instanceof AbstractClientPlayerEntity)) return;
-            if(model == null) {
-                model = new FlycycleItemModel<>();
-            }
+            if(model == null) model = new FlycycleItemModel<>();
             model.partialTicks = partialTicks;
-            if(lastEvent != null) {
-                if(lastEvent.getPlayer().getId() != livingEntity.getId()) {
-                    lastEvent = null;
-                } else if(lastEvent.slot == index && lastEvent.state != model.getState()) {
-                    switch(lastEvent.state) {
-                        case FlycycleItemModel.STARTING_STATE:
-                            model.startingState();
-                            break;
-                        case FlycycleItemModel.STOPPING_STATE:
-                            model.stoppingState();
-                            break;
-                        default: throw new IllegalStateException();
-                    }
-                    lastEvent = null;
-                }
-            }
             model.setupAnim((AbstractClientPlayerEntity) livingEntity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
             model.renderToBuffer(matrixStack, ItemRenderer.getFoilBuffer(renderTypeBuffer, model.renderType(FlycycleItemModel.MODEL),
                     false, stack.hasFoil()), light, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);

@@ -2,6 +2,7 @@ package cn.maxpixel.mods.flycycle.networking;
 
 import cn.maxpixel.mods.flycycle.Flycycle;
 import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CAnimationStateChangedPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CEngineWorkPacket;
 import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CSyncCurioItemStackEnergyPacket;
 import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CSyncItemStackEnergyPacket;
 import cn.maxpixel.mods.flycycle.networking.packet.serverbound.SBroadcastAnimationStateChangedPacket;
@@ -29,6 +30,7 @@ public class NetworkManager {
         CSyncItemStackEnergyPacket.register();
         CSyncCurioItemStackEnergyPacket.register();
         CAnimationStateChangedPacket.register();
+        CEngineWorkPacket.register();
     }
     private static final String PROTOCOL_VERSION = "1";
     private static int messageIndex = 0;
