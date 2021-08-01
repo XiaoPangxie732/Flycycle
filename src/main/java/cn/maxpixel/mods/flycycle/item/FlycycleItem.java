@@ -200,8 +200,21 @@ public class FlycycleItem extends Item {
         @Override
         public void curioTick(String identifier, int index, LivingEntity player) {
             if(engineWork != null && player instanceof ServerPlayerEntity && engineWork.getPlayer().getId() == player.getId() &&
-                    engineWork.slot == index && engineWork.work) {
-                player.fallDistance = 0.f;
+                    engineWork.slot == index) {
+                if(engineWork.work) {
+                    player.fallDistance = 0.f;
+                    if(player.isSwimming()) {
+                        if(!player.getAttribute(ForgeMod.SWIM_SPEED.get()).hasModifier(SPEED_MODIFIER))
+                            player.getAttribute(ForgeMod.SWIM_SPEED.get()).addTransientModifier(SPEED_MODIFIER);
+                    } else if(player.getPose() == Pose.STANDING && !(player.isUnderWater() && player.isSprinting())) {
+                        ((ServerPlayerEntity) player).abilities.mayfly = true;
+                    }
+                } else {
+                    player.getAttribute(ForgeMod.SWIM_SPEED.get()).removeModifier(SPEED_MODIFIER);
+                    if(!((ServerPlayerEntity) player).isCreative() && !player.isSpectator()) {
+                        ((ServerPlayerEntity) player).abilities.mayfly = false;
+                    }
+                }
             }
             ENERGY.filter(storage -> storage.needUpdate && player instanceof ServerPlayerEntity)
                     .ifPresent(storage -> {
