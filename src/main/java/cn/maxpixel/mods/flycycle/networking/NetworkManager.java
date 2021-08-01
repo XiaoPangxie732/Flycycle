@@ -1,13 +1,13 @@
 package cn.maxpixel.mods.flycycle.networking;
 
 import cn.maxpixel.mods.flycycle.Flycycle;
-import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CAnimationStateChangedPacket;
-import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CEngineWorkPacket;
-import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CSyncCurioItemStackEnergyPacket;
-import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CSyncItemStackEnergyPacket;
-import cn.maxpixel.mods.flycycle.networking.packet.serverbound.SBroadcastAnimationStateChangedPacket;
-import cn.maxpixel.mods.flycycle.networking.packet.serverbound.SSyncCurioItemStackEnergyPacket;
-import cn.maxpixel.mods.flycycle.networking.packet.serverbound.SSyncItemStackEnergyPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.clientbound.SBroadcastAnimationStateChangedPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.clientbound.SSyncCurioItemStackEnergyPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.clientbound.SSyncItemStackEnergyPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.serverbound.CAnimationStateChangedPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.serverbound.CEngineWorkPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.serverbound.CSyncCurioItemStackEnergyPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.serverbound.CSyncItemStackEnergyPacket;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.network.NetworkDirection;

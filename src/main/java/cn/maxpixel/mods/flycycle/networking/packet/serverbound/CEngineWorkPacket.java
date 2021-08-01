@@ -1,4 +1,4 @@
-package cn.maxpixel.mods.flycycle.networking.packet.clientbound;
+package cn.maxpixel.mods.flycycle.networking.packet.serverbound;
 
 import cn.maxpixel.mods.flycycle.event.player.EngineWorkEvent;
 import cn.maxpixel.mods.flycycle.networking.NetworkManager;

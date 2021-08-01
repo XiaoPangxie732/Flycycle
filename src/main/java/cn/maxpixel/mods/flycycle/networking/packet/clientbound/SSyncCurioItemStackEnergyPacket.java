@@ -1,4 +1,4 @@
-package cn.maxpixel.mods.flycycle.networking.packet.serverbound;
+package cn.maxpixel.mods.flycycle.networking.packet.clientbound;
 
 import cn.maxpixel.mods.flycycle.item.FlycycleItem;
 import cn.maxpixel.mods.flycycle.networking.NetworkManager;
@@ -10,15 +10,18 @@ import net.minecraftforge.energy.CapabilityEnergy;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.network.NetworkDirection;
 import net.minecraftforge.fml.network.NetworkEvent;
+import top.theillusivec4.curios.api.CuriosApi;
+import top.theillusivec4.curios.api.SlotTypePreset;
+import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
 
 import java.util.function.Supplier;
 
-public class SSyncItemStackEnergyPacket {
+public class SSyncCurioItemStackEnergyPacket {
     public static void register() {
-        NetworkManager.registerMessage(SSyncItemStackEnergyPacket.class,
-                SSyncItemStackEnergyPacket::encode,
-                SSyncItemStackEnergyPacket::decode,
-                SSyncItemStackEnergyPacket::handle,
+        NetworkManager.registerMessage(SSyncCurioItemStackEnergyPacket.class,
+                SSyncCurioItemStackEnergyPacket::encode,
+                SSyncCurioItemStackEnergyPacket::decode,
+                SSyncCurioItemStackEnergyPacket::handle,
                 NetworkDirection.PLAY_TO_CLIENT);
     }
 
@@ -26,7 +29,7 @@ public class SSyncItemStackEnergyPacket {
     private final int slot;
     private final int energy;
 
-    public SSyncItemStackEnergyPacket(int id, int slot, int energy) {
+    public SSyncCurioItemStackEnergyPacket(int id, int slot, int energy) {
         this.id = id;
         this.slot = slot;
         this.energy = energy;
@@ -38,8 +41,8 @@ public class SSyncItemStackEnergyPacket {
                 .writeVarInt(energy);
     }
 
-    public static SSyncItemStackEnergyPacket decode(PacketBuffer packetBuffer) {
-        return new SSyncItemStackEnergyPacket(packetBuffer.readVarInt(), packetBuffer.readVarInt(), packetBuffer.readVarInt());
+    public static SSyncCurioItemStackEnergyPacket decode(PacketBuffer packetBuffer) {
+        return new SSyncCurioItemStackEnergyPacket(packetBuffer.readVarInt(), packetBuffer.readVarInt(), packetBuffer.readVarInt());
     }
 
     public void handle(Supplier<NetworkEvent.Context> contextSupplier) {
@@ -54,10 +57,16 @@ public class SSyncItemStackEnergyPacket {
     @OnlyIn(Dist.CLIENT)
     private void clientHandle() {
         if(Minecraft.getInstance().player != null && Minecraft.getInstance().player.getId() == id) {
-            Minecraft.getInstance().player.inventory.getItem(slot).getCapability(CapabilityEnergy.ENERGY)
-                    .filter(FlycycleItem.ChangeableEnergyStorage.class::isInstance)
-                    .map(FlycycleItem.ChangeableEnergyStorage.class::cast)
-                    .ifPresent(storage -> storage.setEnergy(energy));
+            CuriosApi.getCuriosHelper()
+                    .getCuriosHandler(Minecraft.getInstance().player)
+                    .map(handler -> handler.getCurios().get(SlotTypePreset.BACK.getIdentifier()))
+                    .map(ICurioStacksHandler::getStacks)
+                    .map(handler -> handler.getStackInSlot(slot))
+                    .flatMap(stack -> stack
+                            .getCapability(CapabilityEnergy.ENERGY)
+                            .filter(FlycycleItem.ChangeableEnergyStorage.class::isInstance)
+                            .map(FlycycleItem.ChangeableEnergyStorage.class::cast)
+                    ).ifPresent(storage -> storage.setEnergy(energy));
         }
     }
 }

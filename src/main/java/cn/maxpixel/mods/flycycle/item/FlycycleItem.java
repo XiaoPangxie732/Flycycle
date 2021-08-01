@@ -6,12 +6,12 @@ import cn.maxpixel.mods.flycycle.event.player.AnimationStateChangedEvent;
 import cn.maxpixel.mods.flycycle.event.player.EngineWorkEvent;
 import cn.maxpixel.mods.flycycle.model.item.FlycycleItemModel;
 import cn.maxpixel.mods.flycycle.networking.NetworkManager;
-import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CAnimationStateChangedPacket;
-import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CEngineWorkPacket;
-import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CSyncCurioItemStackEnergyPacket;
-import cn.maxpixel.mods.flycycle.networking.packet.clientbound.CSyncItemStackEnergyPacket;
-import cn.maxpixel.mods.flycycle.networking.packet.serverbound.SSyncCurioItemStackEnergyPacket;
-import cn.maxpixel.mods.flycycle.networking.packet.serverbound.SSyncItemStackEnergyPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.clientbound.SSyncCurioItemStackEnergyPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.clientbound.SSyncItemStackEnergyPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.serverbound.CAnimationStateChangedPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.serverbound.CEngineWorkPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.serverbound.CSyncCurioItemStackEnergyPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.serverbound.CSyncItemStackEnergyPacket;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import mcp.MethodsReturnNonnullByDefault;
 import net.minecraft.client.entity.player.AbstractClientPlayerEntity;
@@ -191,25 +191,17 @@ public class FlycycleItem extends Item {
         }
 
         @Override
+        public void onEquip(SlotContext slotContext, ItemStack prevStack) {
+            if(slotContext.getWearer() instanceof ServerPlayerEntity) {
+                ENERGY.ifPresent(storage -> storage.needUpdate = true);
+            }
+        }
+
+        @Override
         public void curioTick(String identifier, int index, LivingEntity player) {
             if(engineWork != null && player instanceof ServerPlayerEntity && engineWork.getPlayer().getId() == player.getId() &&
-                    engineWork.slot == index) {
-                if(engineWork.work) {
-                    player.fallDistance = 0.f;
-                    if(player.isSwimming()) {
-                        if(!player.getAttribute(ForgeMod.SWIM_SPEED.get()).hasModifier(SPEED_MODIFIER))
-                            player.getAttribute(ForgeMod.SWIM_SPEED.get()).addTransientModifier(SPEED_MODIFIER);
-                    } else if(player.getPose() == Pose.STANDING && !(player.isUnderWater() && player.isSprinting())) {
-                        ((ServerPlayerEntity) player).abilities.flying = true;
-                        ((ServerPlayerEntity) player).abilities.setFlyingSpeed(.15f);
-                    }
-                } else {
-                    player.getAttribute(ForgeMod.SWIM_SPEED.get()).removeModifier(SPEED_MODIFIER);
-                    ((ServerPlayerEntity) player).abilities.setFlyingSpeed(.05f);
-                    if(!((ServerPlayerEntity) player).isCreative() && !player.isSpectator()) {
-                        ((ServerPlayerEntity) player).abilities.flying = false;
-                    }
-                }
+                    engineWork.slot == index && engineWork.work) {
+                player.fallDistance = 0.f;
             }
             ENERGY.filter(storage -> storage.needUpdate && player instanceof ServerPlayerEntity)
                     .ifPresent(storage -> {

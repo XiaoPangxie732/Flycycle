@@ -1,7 +1,7 @@
-package cn.maxpixel.mods.flycycle.networking.packet.clientbound;
+package cn.maxpixel.mods.flycycle.networking.packet.serverbound;
 
 import cn.maxpixel.mods.flycycle.networking.NetworkManager;
-import cn.maxpixel.mods.flycycle.networking.packet.serverbound.SBroadcastAnimationStateChangedPacket;
+import cn.maxpixel.mods.flycycle.networking.packet.clientbound.SBroadcastAnimationStateChangedPacket;
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fml.network.NetworkDirection;
 import net.minecraftforge.fml.network.NetworkEvent;
