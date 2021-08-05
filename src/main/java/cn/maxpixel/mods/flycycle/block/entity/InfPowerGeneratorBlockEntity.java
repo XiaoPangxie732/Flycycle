@@ -79,10 +79,10 @@ public class InfPowerGeneratorBlockEntity extends TileEntity implements ITickabl
         if(hasLevel() && !level.isClientSide && level.isLoaded(getBlockPos()) &&
                 level.getBiome(getBlockPos()).getBiomeCategory() == Biome.Category.OCEAN && waterAround()) {
             profiler.popPush("extractEnergy");
-            int minX = -20 + (getBlockPos().getX() >> 4);
-            int minZ = -20 + (getBlockPos().getZ() >> 4);
-            int maxX = 20 + (getBlockPos().getX() >> 4);
-            int maxZ = 20 + (getBlockPos().getZ() >> 4);
+            int minX = -100 + (getBlockPos().getX() >> 4);
+            int minZ = -100 + (getBlockPos().getZ() >> 4);
+            int maxX = 100 + (getBlockPos().getX() >> 4);
+            int maxZ = 100 + (getBlockPos().getZ() >> 4);
             ChunkPosUtil.rangeClosed(minX, minZ, maxX, maxZ, level)
                     .filter(Objects::nonNull)
                     .forEach(chunk -> {

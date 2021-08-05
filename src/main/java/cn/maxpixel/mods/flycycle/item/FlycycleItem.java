@@ -144,8 +144,8 @@ public class FlycycleItem extends Item {
         }
 
         private boolean use() {
-            if(energy >= 50) {
-                energy -= 50;
+            if(energy >= 5) {
+                energy -= 5;
                 needUpdate = true;
                 return true;
             }
